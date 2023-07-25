@@ -503,7 +503,7 @@ class AnimationPipeline(DiffusionPipeline):
                     # predict the noise residual
                     with torch.autocast('cuda', enabled=fp16, dtype=torch.float16):
                         pred = self.unet(latent_model_input, t, encoder_hidden_states=text_embeddings)
-                    noise_pred[:, :, seq] += pred.sample.to(dtype=latents_dtype, device=cpu)
+                    noise_pred[:, :, seq] += pred.sample.to(dtype=latents_dtype, device=device)
                     counter[:, :, seq] += 1
                     progress_bar.update()
 
