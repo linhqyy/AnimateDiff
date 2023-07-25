@@ -40,7 +40,7 @@ def main(args):
     savedir = f"/content/drive/MyDrive/AI content/AnimateDiff/"
     #savedir = f"/content/drive/MyDrive/AI content/Untitled Folder/{Path(args.config).stem}-{time_str}"
     extension = args.format
-    os.makedirs(savedir)
+    os.makedirs(savedir, exist_ok=True)
     inference_config = OmegaConf.load(args.inference_config)
 
     config  = OmegaConf.load(args.config)
