@@ -37,9 +37,10 @@ def main(args):
         args.context_overlap = args.context_length // 2
 
     time_str = datetime.datetime.now().strftime("%Y-%m-%dT%H-%M-%S")
-    savedir = f"samples/{Path(args.config).stem}-{time_str}"
+    savedir = f"/content/drive/MyDrive/AI content/AnimateDiff/"
+    #savedir = f"/content/drive/MyDrive/AI content/Untitled Folder/{Path(args.config).stem}-{time_str}"
     extension = args.format
-    os.makedirs(savedir)
+    os.makedirs(savedir, exist_ok=True)
     inference_config = OmegaConf.load(args.inference_config)
 
     config  = OmegaConf.load(args.config)
@@ -145,15 +146,16 @@ def main(args):
                 samples.append(sample)
 
                 prompt = "-".join((prompt.replace("/", "").split(" ")[:10]))
-                save_videos_grid(sample, f"{savedir}/sample/{sample_idx}-{prompt}.{extension}")
+                # save_videos_grid(sample, f"{savedir}/sample/{sample_idx}-{prompt}.{extension}")
                 print(f"save to {savedir}/sample/{prompt}.{extension}")
                 
                 sample_idx += 1
 
     samples = torch.concat(samples)
-    save_videos_grid(samples, f"{savedir}/sample.{extension}", n_rows=4)
+    save_videos_grid(samples, f"{savedir}/{Path(args.config).stem}-{time_str}.{extension}", n_rows=4)
+    save_videos_grid(samples, f"{savedir}/{Path(args.config).stem}-{time_str}.gif", n_rows=4)
 
-    OmegaConf.save(config, f"{savedir}/config.yaml")
+    OmegaConf.save(config, f"{savedir}/{Path(args.config).stem}-{time_str}.yaml")
 
 
 if __name__ == "__main__":
