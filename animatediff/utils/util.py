@@ -24,8 +24,9 @@ def save_videos_grid(videos: torch.Tensor, path: str, rescale=False, n_rows=6, f
         x = (x * 255).numpy().astype(np.uint8)
         outputs.append(x)
 
+    duration = 1000 / fps
     os.makedirs(os.path.dirname(path), exist_ok=True)
-    imageio.mimsave(path, outputs, fps=fps)
+    imageio.mimsave(path, outputs, duration=duration)
 
 
 # DDIM Inversion
