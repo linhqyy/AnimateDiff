@@ -172,15 +172,15 @@ class AnimateController:
         else: torch.seed()
         seed = torch.initial_seed()
         
-        sample = pipeline(
-            prompt_textbox,
-            negative_prompt     = negative_prompt_textbox,
-            num_inference_steps = sample_step_slider,
-            guidance_scale      = cfg_scale_slider,
-            width               = width_slider,
-            height              = height_slider,
-            video_length        = length_slider,
-        ).videos
+        # sample = pipeline(
+        #     prompt_textbox,
+        #     negative_prompt     = negative_prompt_textbox,
+        #     num_inference_steps = sample_step_slider,
+        #     guidance_scale      = cfg_scale_slider,
+        #     width               = width_slider,
+        #     height              = height_slider,
+        #     video_length        = length_slider,
+        # ).videos
 
         sample = pipeline(
             prompt              = prompt_textbox,
@@ -242,6 +242,7 @@ def ui():
                     label="Pretrained Model Path",
                     choices=controller.stable_diffusion_list,
                     interactive=True,
+                    default=controller.stable_diffusion_list[0]
                 )
                 stable_diffusion_dropdown.change(fn=controller.update_stable_diffusion, inputs=[stable_diffusion_dropdown], outputs=[stable_diffusion_dropdown])
                 
