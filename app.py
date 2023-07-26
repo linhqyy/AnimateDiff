@@ -106,7 +106,7 @@ class AnimateController:
         self.stable_diffusion_list = glob(os.path.join(self.stable_diffusion_dir, "*/"))
 
     def refresh_init_images(self):
-        self.init_images = glob(os.path.join(self.init_images_dir, "*/"))
+        self.init_image_list = glob(os.path.join(self.init_images_dir, "*/"))
 
     def refresh_motion_module(self):
         motion_module_list = glob(os.path.join(self.motion_module_dir, "*.ckpt"))
@@ -353,6 +353,8 @@ def ui():
             
             for i in range(max_LoRAs):
                 with gr.Row(visible=False) as test:
+
+                    # Change to use gr.State() instead of gr.Textbox()
                     lora_index = gr.Textbox(value=i, visible=False)
 
                     lora_model_dropdown = gr.Dropdown(
