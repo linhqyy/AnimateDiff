@@ -187,6 +187,9 @@ class AnimateController:
         #     video_length        = length_slider,
         # ).videos
 
+        # Handle none init image
+        if init_image == "none": init_image = None
+
         sample = pipeline(
             prompt              = prompt_textbox,
             init_image          = init_image,
@@ -322,12 +325,14 @@ def ui():
                     value="none",
                     interactive=True,
                 )
+            
 
-            init_image_refresh_button = gr.Button(value="\U0001F503", elem_classes="toolbutton")
-            def update_init_image():
-                controller.refresh_init_image()
-                return gr.Dropdown.update(choices=controller.init_image_list)
-            init_image_refresh_button.click(fn=update_init_image, inputs=[], outputs=[init_image_dropdown])
+            with gr.row():
+                init_image_refresh_button = gr.Button(value="\U0001F503", elem_classes="toolbutton")
+                def update_init_image():
+                    controller.refresh_init_image()
+                    return gr.Dropdown.update(choices=controller.init_image_list)
+                init_image_refresh_button.click(fn=update_init_image, inputs=[], outputs=[init_image_dropdown])
 
             # init_image = gr.Textbox(label="Init image", value="/content/AnimateDiff/configs/prompts/yoimiya-init.jpg")
             prompt_textbox = gr.Textbox(label="Prompt", lines=2, value="best quality, masterpiece, 1girl, looking at viewer, blurry background, upper body, contemporary, dress")
