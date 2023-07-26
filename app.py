@@ -397,7 +397,7 @@ def ui():
             with gr.Row():
                 init_image_dropdown = gr.Dropdown(
                     label="Select init image",
-                    choices=["none"] + controller.init_images,
+                    choices=["none"] + controller.init_image_list,
                     value="none",
                     interactive=True,
                 )
