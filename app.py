@@ -133,6 +133,7 @@ class AnimateController:
         motion_module_dropdown,
         base_model_dropdown,
         lora_alpha_slider,
+        init_image,
         prompt_textbox, 
         negative_prompt_textbox, 
         sampler_dropdown, 
@@ -141,7 +142,11 @@ class AnimateController:
         length_slider, 
         height_slider, 
         cfg_scale_slider, 
-        seed_textbox
+        seed_textbox,
+        context_length,
+        context_stride,
+        context_overlap,
+        fp16
     ):    
         if self.unet is None:
             raise gr.Error(f"Please select a pretrained model path.")
@@ -151,6 +156,7 @@ class AnimateController:
             raise gr.Error(f"Please select a base DreamBooth model.")
 
         if is_xformers_available(): self.unet.enable_xformers_memory_efficient_attention()
+
 
         pipeline = AnimationPipeline(
             vae=self.vae, text_encoder=self.text_encoder, tokenizer=self.tokenizer, unet=self.unet,
@@ -174,6 +180,21 @@ class AnimateController:
             width               = width_slider,
             height              = height_slider,
             video_length        = length_slider,
+        ).videos
+
+        sample = pipeline(
+            prompt              = prompt_textbox,
+            init_image          = init_image,
+            negative_prompt     = negative_prompt_textbox,
+            num_inference_steps = sample_step_slider,
+            guidance_scale      = cfg_scale_slider,
+            width               = width_slider,
+            height              = height_slider,
+            video_length        = length_slider,
+            temporal_context    = context_length,
+            strides             = context_stride + 1,
+            overlap             = context_overlap,
+            fp16                = fp16,
         ).videos
 
         save_sample_path = os.path.join(self.savedir_sample, f"{sample_idx}.mp4")
@@ -277,6 +298,7 @@ def ui():
                 """
             )
             
+            init_image = gr.Textbox(label="Init image", lines=2)
             prompt_textbox = gr.Textbox(label="Prompt", lines=2)
             negative_prompt_textbox = gr.Textbox(label="Negative prompt", lines=2)
                 
@@ -290,6 +312,10 @@ def ui():
                     height_slider    = gr.Slider(label="Height",           value=512, minimum=256, maximum=1024, step=64)
                     length_slider    = gr.Slider(label="Animation length", value=16,  minimum=8,   maximum=24,   step=1)
                     cfg_scale_slider = gr.Slider(label="CFG Scale",        value=7.5, minimum=0,   maximum=20)
+                    context_length  = gr.Slider(label="Context length",        value=20, minimum=10,   maximum=40)
+                    context_stride = gr.Slider(label="Context stride",        value=20, minimum=10,   maximum=40)
+                    context_overlap = gr.Slider(label="Context overlap",        value=0, minimum=0,   maximum=10)
+                    fp16 = gr.Checkbox(label="FP16", default=True)
                     
                     with gr.Row():
                         seed_textbox = gr.Textbox(label="Seed", value=-1)
@@ -307,6 +333,7 @@ def ui():
                     motion_module_dropdown,
                     base_model_dropdown,
                     lora_alpha_slider,
+                    init_image,
                     prompt_textbox, 
                     negative_prompt_textbox, 
                     sampler_dropdown, 
@@ -316,6 +343,10 @@ def ui():
                     height_slider, 
                     cfg_scale_slider, 
                     seed_textbox,
+                    context_length,
+                    context_stride,
+                    context_overlap,
+                    fp16
                 ],
                 outputs=[result_video]
             )
