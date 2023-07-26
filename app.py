@@ -340,9 +340,9 @@ def ui():
                 personalized_refresh_button.click(fn=update_personalized_model, inputs=[], outputs=[base_model_dropdown])
 
                 # Load default models
-                # controller.update_stable_diffusion(stable_diffusion_dropdown.value)
-                # controller.update_motion_module(motion_module_dropdown.value)
-                # controller.update_base_model(base_model_dropdown.value)
+                controller.update_stable_diffusion(stable_diffusion_dropdown.value)
+                controller.update_motion_module(motion_module_dropdown.value)
+                controller.update_base_model(base_model_dropdown.value)
 
         with gr.Column(variant="panel"):
             gr.Markdown(
