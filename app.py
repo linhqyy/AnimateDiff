@@ -272,7 +272,7 @@ def ui():
                 base_model_dropdown = gr.Dropdown(
                     label="Select base Dreambooth model (required)",
                     choices=controller.personalized_model_list,
-                    value=controller.personalized_model_list[0]
+                    value=controller.personalized_model_list[0],
                     interactive=True,
                 )
                 base_model_dropdown.change(fn=controller.update_base_model, inputs=[base_model_dropdown], outputs=[base_model_dropdown])
