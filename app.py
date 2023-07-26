@@ -327,7 +327,7 @@ def ui():
                 )
             
 
-            with gr.row():
+            with gr.Row():
                 init_image_refresh_button = gr.Button(value="\U0001F503", elem_classes="toolbutton")
                 def update_init_image():
                     controller.refresh_init_image()
