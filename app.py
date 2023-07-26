@@ -156,24 +156,40 @@ class AnimateController:
             self.unet.load_state_dict(converted_unet_checkpoint, strict=False)
 
             self.text_encoder = convert_ldm_clip_checkpoint(base_model_state_dict)
+            self.backup_network()
             return gr.Dropdown.update()
     
+    # Create backup of network
+    def backup_network(self):
+        self.unet_backup = self.unet.to(torch.device("cpu"), copy=True)
+        self.text_encoder_backup = self.text_encoder.to(torch.device("cpu"), copy=True)
+
+    def load_backup_network(self):
+        self.unet.copy_(self.unet_backup)
+        self.text_encoder.copy_(self.text_encoder_backup)
+
     # Load loras
     def load_lora(self, pipeline):
-        for lora in self.project.loras:
-            lora_path = lora['path']
-            # Check if path exists
-            if lora_path == "none" or not os.path.exists(os.path.join(self.loras_dir, lora_path)):
-                continue
+        if self.project.loras == self.loaded_loras:
+            print("Already loaded loras")
+        else:
+            self.loaded_loras = []
+            self.load_backup_network()
+            for lora in self.project.loras:
+                lora_path = lora['path']
+                # Check if path exists
+                if lora_path == "none" or not os.path.exists(os.path.join(self.loras_dir, lora_path)):
+                    continue
 
-            lora_alpha = lora['alpha']
-            add_state_dict = {}
-            print(f"loading lora {lora_path} with weight {lora_alpha}")
-            lora_path = os.path.join(self.loras_dir, lora_path)
-            with safe_open(lora_path, framework="pt", device="cpu") as f:
-                for key in f.keys():
-                    add_state_dict[key] = f.get_tensor(key)
-            pipeline = convert_lora(pipeline, add_state_dict, alpha=lora_alpha)
+                lora_alpha = lora['alpha']
+                add_state_dict = {}
+                print(f"loading lora {lora_path} with weight {lora_alpha}")
+                lora_path = os.path.join(self.loras_dir, lora_path)
+                with safe_open(lora_path, framework="pt", device="cpu") as f:
+                    for key in f.keys():
+                        add_state_dict[key] = f.get_tensor(key)
+                pipeline = convert_lora(pipeline, add_state_dict, alpha=lora_alpha)
+                self.loaded_loras.append(lora)
         return pipeline
 
 
