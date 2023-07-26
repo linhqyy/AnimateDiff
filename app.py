@@ -352,7 +352,7 @@ def ui():
                 lora_refresh_button = gr.Button(value="\U0001F503", elem_classes="toolbutton")
             
             for i in range(max_LoRAs):
-                with gr.Row() as test:
+                with gr.Row(visible=False) as test:
                     lora_index = gr.Textbox(value=i, visible=False)
 
                     lora_model_dropdown = gr.Dropdown(
@@ -361,7 +361,6 @@ def ui():
                             value="none",
                             interactive=True,
                             elem_id=f"lora_model_dropdown-{i}",
-                            visible=False
                         )
                     
                     
