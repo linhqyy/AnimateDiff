@@ -219,8 +219,6 @@ class AnimateController:
         with open(os.path.join(self.savedir, "logs.json"), "a") as f:
             f.write(json_str)
             f.write("\n\n")
-
-        print(save_sample_path)
             
         return save_sample_path
         
@@ -371,4 +369,5 @@ def ui():
 
 if __name__ == "__main__":
     demo = ui()
+    demo.queue(concurrency_count=3)
     demo.launch(share=True, debug=True)
