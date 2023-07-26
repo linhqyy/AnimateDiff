@@ -73,7 +73,7 @@ class AnimateController:
         self.basedir                = os.getcwd()
         self.stable_diffusion_dir   = os.path.join(self.basedir, "models", "StableDiffusion")
         self.motion_module_dir      = os.path.join(self.basedir, "models", "Motion_Module")
-        self.personalized_model_dir = os.path.join(self.basedir, "models", "DreamBooth_LoRA")
+        self.checkpoints_dir = os.path.join(self.basedir, "models", "checkpoints")
         self.init_images_dir        = os.path.join(self.basedir, "init_images")
         self.savedir                = os.path.join(self.basedir, "samples", datetime.now().strftime("Gradio-%Y-%m-%dT%H-%M-%S"))
         self.savedir_sample         = os.path.join(self.savedir, "sample")
@@ -85,7 +85,7 @@ class AnimateController:
 
         self.stable_diffusion_list   = []
         self.motion_module_list      = []
-        self.personalized_model_list = []
+        self.checkpoints_list = []
         self.init_images = []
         
         self.refresh_stable_diffusion()
@@ -113,8 +113,8 @@ class AnimateController:
         self.motion_module_list = [os.path.basename(p) for p in motion_module_list]
 
     def refresh_personalized_model(self):
-        personalized_model_list = glob(os.path.join(self.personalized_model_dir, "*.safetensors"))
-        self.personalized_model_list = [os.path.basename(p) for p in personalized_model_list]
+        personalized_model_list = glob(os.path.join(self.checkpoints_dir, "*.safetensors"))
+        self.checkpoints_list = [os.path.basename(p) for p in personalized_model_list]
 
     def refresh_lora_models(self):
         lora_list = glob(os.path.join(self.loras_dir, "*.safetensors"))
@@ -143,7 +143,7 @@ class AnimateController:
             gr.Info(f"Please select a pretrained model path.")
             return gr.Dropdown.update(value=None)
         else:
-            base_model_dropdown = os.path.join(self.personalized_model_dir, base_model_dropdown)
+            base_model_dropdown = os.path.join(self.checkpoints_dir, base_model_dropdown)
             base_model_state_dict = {}
             with safe_open(base_model_dropdown, framework="pt", device="cpu") as f:
                 for key in f.keys():
@@ -159,7 +159,7 @@ class AnimateController:
             return gr.Dropdown.update()
 
     def update_lora_model(self, lora_model_dropdown):
-        lora_model_dropdown = os.path.join(self.personalized_model_dir, lora_model_dropdown)
+        lora_model_dropdown = os.path.join(self.checkpoints_dir, lora_model_dropdown)
         self.lora_model_state_dict = {}
         if lora_model_dropdown == "none": pass
         else:
@@ -325,8 +325,8 @@ def ui():
                 
                 base_model_dropdown = gr.Dropdown(
                     label="Select base Dreambooth model (required)",
-                    choices=controller.personalized_model_list,
-                    value=controller.personalized_model_list[0],
+                    choices=controller.checkpoints_list,
+                    value=controller.checkpoints_list[0],
                     interactive=True,
                 )
 
@@ -337,8 +337,8 @@ def ui():
                 def update_personalized_model():
                     controller.refresh_personalized_model()
                     return [
-                        gr.Dropdown.update(choices=controller.personalized_model_list),
-                        gr.Dropdown.update(choices=["none"] + controller.personalized_model_list)
+                        gr.Dropdown.update(choices=controller.checkpoints_list),
+                        gr.Dropdown.update(choices=["none"] + controller.checkpoints_list)
                     ]
                 personalized_refresh_button.click(fn=update_personalized_model, inputs=[], outputs=[base_model_dropdown, lora_model_dropdown])
 
