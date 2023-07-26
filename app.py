@@ -364,7 +364,7 @@ def ui():
                     motion_module_dropdown,
                     base_model_dropdown,
                     lora_alpha_slider,
-                    init_image,
+                    init_image_dropdown,
                     prompt_textbox, 
                     negative_prompt_textbox, 
                     sampler_dropdown, 
