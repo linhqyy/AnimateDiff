@@ -106,7 +106,7 @@ class AnimateController:
         self.stable_diffusion_list = glob(os.path.join(self.stable_diffusion_dir, "*/"))
 
     def refresh_init_images(self):
-        self.init_image_list = glob(os.path.join(self.init_images_dir, "*/"))
+        self.init_image_list = glob(os.path.join(self.init_images_dir, "*"))
 
     def refresh_motion_module(self):
         motion_module_list = glob(os.path.join(self.motion_module_dir, "*.ckpt"))
