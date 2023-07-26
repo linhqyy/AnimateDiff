@@ -23,6 +23,7 @@ from animatediff.utils.convert_lora_safetensor_to_diffusers import convert_lora
 
 
 sample_idx     = 0
+max_LoRAs      = 5
 scheduler_dict = {
     "Euler": EulerDiscreteScheduler,
     "PNDM": PNDMScheduler,
@@ -38,6 +39,33 @@ css = """
 }
 """
 
+class ProjectConfigs:
+    def __init__(self):
+        self.date_created = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        self.prompt = ""
+        self.n_prompt = ""
+        self.sampler = ""
+        self.num_inference_steps = 20
+        self.guidance_scale = 7.5
+        self.width = 512
+        self.height = 512
+        self.video_length = 20
+        self.seed = -1
+        self.temporal_context = 20
+        self.overlap = 20
+        self.strides = 0
+        self.fp16 = True
+        self.loras = [{'path' : 'none', 'alpha': 0.8}]*5
+
+    def toJSON(self):
+        return json.dumps(self, default=lambda o: o.__dict__, 
+            sort_keys=True, indent=4)
+
+    def save_configs(self):
+        with open(os.path.join(self.savedir, f"temp{self.date_created}.json"), "a") as f:
+            f.write(self.toJSON())
+            f.write("\n\n")
+
 class AnimateController:
     def __init__(self):
         
@@ -50,6 +78,10 @@ class AnimateController:
         self.savedir                = os.path.join(self.basedir, "samples", datetime.now().strftime("Gradio-%Y-%m-%dT%H-%M-%S"))
         self.savedir_sample         = os.path.join(self.savedir, "sample")
         os.makedirs(self.savedir, exist_ok=True)
+
+        self.loras_dir = os.path.join(self.basedir, "models", "loras")
+        self.lora_list = []
+        self.project = ProjectConfigs()
 
         self.stable_diffusion_list   = []
         self.motion_module_list      = []
@@ -83,6 +115,10 @@ class AnimateController:
     def refresh_personalized_model(self):
         personalized_model_list = glob(os.path.join(self.personalized_model_dir, "*.safetensors"))
         self.personalized_model_list = [os.path.basename(p) for p in personalized_model_list]
+
+    def refresh_lora_models(self):
+        lora_list = glob(os.path.join(self.loras_dir, "*.safetensors"))
+        self.lora_list = [os.path.basename(p) for p in lora_list]
 
     def update_stable_diffusion(self, stable_diffusion_dropdown):
         self.tokenizer = CLIPTokenizer.from_pretrained(stable_diffusion_dropdown, subfolder="tokenizer")
@@ -131,6 +167,22 @@ class AnimateController:
                 for key in f.keys():
                     self.lora_model_state_dict[key] = f.get_tensor(key)
         return gr.Dropdown.update()
+    
+    # Load loras
+    def load_lora(self, pipeline):
+        for lora in self.project.loras:
+            lora_path = lora['path']
+            if lora_path == "":
+                continue
+            lora_alpha = lora['alpha']
+            add_state_dict = {}
+            print(f"loading lora {lora_path} with weight {lora_alpha}")
+            with safe_open(lora_path.strip(), framework="pt", device="cpu") as f:
+                for key in f.keys():
+                    add_state_dict[key] = f.get_tensor(key)
+            pipeline = convert_lora(pipeline, add_state_dict, alpha=lora_alpha)
+        return pipeline
+
 
     def animate(
         self,
@@ -168,8 +220,10 @@ class AnimateController:
             scheduler=scheduler_dict[sampler_dropdown](**OmegaConf.to_container(self.inference_config.noise_scheduler_kwargs))
         ).to("cuda")
         
-        if self.lora_model_state_dict != {}:
-            pipeline = convert_lora(pipeline, self.lora_model_state_dict, alpha=lora_alpha_slider)
+        # if self.lora_model_state_dict != {}:
+        #     pipeline = convert_lora(pipeline, self.lora_model_state_dict, alpha=lora_alpha_slider)
+
+        pipeline = self.load_lora(pipeline)
 
         pipeline.to("cuda")
 
@@ -177,16 +231,6 @@ class AnimateController:
         else: torch.seed()
         seed = torch.initial_seed()
         
-        # sample = pipeline(
-        #     prompt_textbox,
-        #     negative_prompt     = negative_prompt_textbox,
-        #     num_inference_steps = sample_step_slider,
-        #     guidance_scale      = cfg_scale_slider,
-        #     width               = width_slider,
-        #     height              = height_slider,
-        #     video_length        = length_slider,
-        # ).videos
-
         # Handle none init image
         if init_image == "none": init_image = None
 
@@ -287,16 +331,7 @@ def ui():
                 )
 
                 base_model_dropdown.change(fn=controller.update_base_model, inputs=[base_model_dropdown], outputs=[base_model_dropdown])
-                
-                lora_model_dropdown = gr.Dropdown(
-                    label="Select LoRA model (optional)",
-                    choices=["none"] + controller.personalized_model_list,
-                    value="none",
-                    interactive=True,
-                )
-                lora_model_dropdown.change(fn=controller.update_lora_model, inputs=[lora_model_dropdown], outputs=[lora_model_dropdown])
-                
-                lora_alpha_slider = gr.Slider(label="LoRA alpha", value=0.8, minimum=0, maximum=2, interactive=True)
+
                 
                 personalized_refresh_button = gr.Button(value="\U0001F503", elem_classes="toolbutton")
                 def update_personalized_model():
@@ -308,9 +343,9 @@ def ui():
                 personalized_refresh_button.click(fn=update_personalized_model, inputs=[], outputs=[base_model_dropdown, lora_model_dropdown])
 
                 # Load default models
-                controller.update_stable_diffusion(stable_diffusion_dropdown.value)
-                controller.update_motion_module(motion_module_dropdown.value)
-                controller.update_base_model(base_model_dropdown.value)
+                # controller.update_stable_diffusion(stable_diffusion_dropdown.value)
+                # controller.update_motion_module(motion_module_dropdown.value)
+                # controller.update_base_model(base_model_dropdown.value)
 
         with gr.Column(variant="panel"):
             gr.Markdown(
@@ -319,15 +354,64 @@ def ui():
                 """
             )
 
-            init_image_dropdown = gr.Dropdown(
+            lora_ui_rows = []
+            lora_dropdown_list = []
+
+            with gr.Row():
+                number_of_LoRAs = gr.Slider(0, max_LoRAs, value=0, step=1, label="How many LoRAs to show:")
+                lora_refresh_button = gr.Button(value="\U0001F503", elem_classes="toolbutton")
+            
+            for i in range(max_LoRAs):
+                with gr.Row() as test:
+                    lora_index = gr.Textbox(value=i, visible=False)
+
+                    lora_model_dropdown = gr.Dropdown(
+                            label=f"Select LoRA model {i} (optional)",
+                            choices=["none"] + controller.lora_list,
+                            value="none",
+                            interactive=True,
+                            elem_id=f"lora_model_dropdown-{i}"
+                        )
+                    
+                    
+                    lora_alpha_slider = gr.Slider(label="LoRA alpha", value=0.8, minimum=0, maximum=2, interactive=True)
+
+                    def update_lora(lora_index, lora_model_dropdown, lora_alpha_slider):
+                        index = int(lora_index)
+                        controller.project.loras[index] = {
+                            "path": lora_model_dropdown,
+                            "alpha": lora_alpha_slider
+                        }
+                        print(controller.project.loras)
+                        return
+
+                    lora_model_dropdown.change(fn=update_lora, inputs=[lora_index, lora_model_dropdown, lora_alpha_slider])
+
+                    lora_alpha_slider.change(fn=update_lora, inputs=[lora_index, lora_model_dropdown, lora_alpha_slider])
+
+                    lora_dropdown_list.append(lora_model_dropdown)
+
+                lora_ui_rows.append(test)
+
+            def update_number_of_LoRAs(number):
+                return [gr.Row.update(visible=True)]*number + [gr.Row.update(visible=False)]*(max_LoRAs-number)
+
+            number_of_LoRAs.change(fn=update_number_of_LoRAs, inputs=number_of_LoRAs, outputs=lora_ui_rows)
+
+            def update_lora_list():
+                controller.refresh_lora_models()
+                return [gr.Dropdown.update(choices=["none"] + controller.lora_list)]*max_LoRAs
+
+            lora_refresh_button.click(fn=update_lora_list, inputs=[], outputs=lora_dropdown_list)
+
+            with gr.Row():
+                init_image_dropdown = gr.Dropdown(
                     label="Select init image",
                     choices=["none"] + controller.init_images,
                     value="none",
                     interactive=True,
                 )
-            
 
-            with gr.Row():
                 init_image_refresh_button = gr.Button(value="\U0001F503", elem_classes="toolbutton")
                 def update_init_image():
                     controller.refresh_init_image()
