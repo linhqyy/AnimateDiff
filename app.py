@@ -157,16 +157,6 @@ class AnimateController:
 
             self.text_encoder = convert_ldm_clip_checkpoint(base_model_state_dict)
             return gr.Dropdown.update()
-
-    def update_lora_model(self, lora_model_dropdown):
-        lora_model_dropdown = os.path.join(self.checkpoints_dir, lora_model_dropdown)
-        self.lora_model_state_dict = {}
-        if lora_model_dropdown == "none": pass
-        else:
-            with safe_open(lora_model_dropdown, framework="pt", device="cpu") as f:
-                for key in f.keys():
-                    self.lora_model_state_dict[key] = f.get_tensor(key)
-        return gr.Dropdown.update()
     
     # Load loras
     def load_lora(self, pipeline):
@@ -177,7 +167,8 @@ class AnimateController:
             lora_alpha = lora['alpha']
             add_state_dict = {}
             print(f"loading lora {lora_path} with weight {lora_alpha}")
-            with safe_open(lora_path.strip(), framework="pt", device="cpu") as f:
+            lora_path = os.path.join(self.loras_dir, lora_path)
+            with safe_open(lora_path, framework="pt", device="cpu") as f:
                 for key in f.keys():
                     add_state_dict[key] = f.get_tensor(key)
             pipeline = convert_lora(pipeline, add_state_dict, alpha=lora_alpha)
