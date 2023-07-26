@@ -39,7 +39,8 @@ def main(args):
 
     time_str = datetime.datetime.now().strftime("%Y-%m-%dT%H-%M-%S")
     extension = args.format
-    os.makedirs(args.savedir, exist_ok=True)
+    savedir = args.savedir
+    os.makedirs(savedir, exist_ok=True)
     inference_config = OmegaConf.load(args.inference_config)
 
     config  = OmegaConf.load(args.config)
@@ -160,7 +161,7 @@ def main(args):
 
                 prompt = "-".join((prompt.replace("/", "").split(" ")[:10]))
                 # save_videos_grid(sample, f"{savedir}/sample/{sample_idx}-{prompt}.{extension}")
-                print(f"save to {savedir}/sample/{prompt}.{extension}")
+                print(f"save to {savedir}/{prompt}.{extension}")
                 
                 sample_idx += 1
 
