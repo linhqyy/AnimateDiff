@@ -46,6 +46,7 @@ class AnimateController:
         self.stable_diffusion_dir   = os.path.join(self.basedir, "models", "StableDiffusion")
         self.motion_module_dir      = os.path.join(self.basedir, "models", "Motion_Module")
         self.personalized_model_dir = os.path.join(self.basedir, "models", "DreamBooth_LoRA")
+        self.init_images_dir        = os.path.join(self.basedir, "init_images")
         self.savedir                = os.path.join(self.basedir, "samples", datetime.now().strftime("Gradio-%Y-%m-%dT%H-%M-%S"))
         self.savedir_sample         = os.path.join(self.savedir, "sample")
         os.makedirs(self.savedir, exist_ok=True)
@@ -53,6 +54,7 @@ class AnimateController:
         self.stable_diffusion_list   = []
         self.motion_module_list      = []
         self.personalized_model_list = []
+        self.init_images = []
         
         self.refresh_stable_diffusion()
         self.refresh_motion_module()
@@ -70,6 +72,9 @@ class AnimateController:
 
     def refresh_stable_diffusion(self):
         self.stable_diffusion_list = glob(os.path.join(self.stable_diffusion_dir, "*/"))
+
+    def refresh_init_images(self):
+        self.init_images = glob(os.path.join(self.init_images_dir, "*/"))
 
     def refresh_motion_module(self):
         motion_module_list = glob(os.path.join(self.motion_module_dir, "*.ckpt"))
@@ -310,8 +315,21 @@ def ui():
                 ### 2. Configs for AnimateDiff.
                 """
             )
-            
-            init_image = gr.Textbox(label="Init image", value="/content/AnimateDiff/configs/prompts/yoimiya-init.jpg")
+
+            init_image_dropdown = gr.Dropdown(
+                    label="Select init image",
+                    choices=["none"] + controller.init_images,
+                    value="none",
+                    interactive=True,
+                )
+
+            init_image_refresh_button = gr.Button(value="\U0001F503", elem_classes="toolbutton")
+            def update_init_image():
+                controller.refresh_init_image()
+                return gr.Dropdown.update(choices=controller.init_image_list)
+            init_image_refresh_button.click(fn=update_init_image, inputs=[], outputs=[init_image_dropdown])
+
+            # init_image = gr.Textbox(label="Init image", value="/content/AnimateDiff/configs/prompts/yoimiya-init.jpg")
             prompt_textbox = gr.Textbox(label="Prompt", lines=2, value="best quality, masterpiece, 1girl, looking at viewer, blurry background, upper body, contemporary, dress")
             negative_prompt_textbox = gr.Textbox(label="Negative prompt", lines=2)
                 
