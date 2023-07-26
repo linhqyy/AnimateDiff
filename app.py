@@ -209,7 +209,11 @@ class AnimateController:
             "width": width_slider,
             "height": height_slider,
             "video_length": length_slider,
-            "seed": seed
+            "seed": seed,
+            "temporal_context": context_length,
+            "strides": context_stride,
+            "overlap": context_overlap,
+            "fp16": fp16,
         }
         json_str = json.dumps(sample_config, indent=4)
         with open(os.path.join(self.savedir, "logs.json"), "a") as f:
@@ -218,7 +222,7 @@ class AnimateController:
 
         print(save_sample_path)
             
-        return gr.Video.update(value=save_sample_path)
+        return save_sample_path
         
 
 controller = AnimateController()
@@ -309,8 +313,8 @@ def ui():
                 """
             )
             
-            init_image = gr.Textbox(label="Init image", lines=2)
-            prompt_textbox = gr.Textbox(label="Prompt", lines=2)
+            init_image = gr.Textbox(label="Init image", value="/content/AnimateDiff/configs/prompts/yoimiya-init.jpg")
+            prompt_textbox = gr.Textbox(label="Prompt", lines=2, value="best quality, masterpiece, 1girl, looking at viewer, blurry background, upper body, contemporary, dress")
             negative_prompt_textbox = gr.Textbox(label="Negative prompt", lines=2)
                 
             with gr.Row().style(equal_height=False):
@@ -324,8 +328,8 @@ def ui():
                     length_slider    = gr.Slider(label="Animation length", value=16,  minimum=8,   maximum=24,   step=1)
                     cfg_scale_slider = gr.Slider(label="CFG Scale",        value=7.5, minimum=0,   maximum=20)
                     context_length  = gr.Slider(label="Context length",        value=20, minimum=10,   maximum=40)
-                    context_stride = gr.Slider(label="Context stride",        value=20, minimum=10,   maximum=40)
-                    context_overlap = gr.Slider(label="Context overlap",        value=0, minimum=0,   maximum=10)
+                    context_overlap = gr.Slider(label="Context overlap",        value=20, minimum=10,   maximum=40)
+                    context_stride = gr.Slider(label="Context stride",        value=0, minimum=0,   maximum=20)
                     fp16 = gr.Checkbox(label="FP16", value=True)
                     
                     with gr.Row():
