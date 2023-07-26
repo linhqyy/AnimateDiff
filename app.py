@@ -360,7 +360,8 @@ def ui():
                             choices=["none"] + controller.lora_list,
                             value="none",
                             interactive=True,
-                            elem_id=f"lora_model_dropdown-{i}"
+                            elem_id=f"lora_model_dropdown-{i}",
+                            visible=False
                         )
                     
                     
