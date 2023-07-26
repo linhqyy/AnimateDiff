@@ -162,8 +162,10 @@ class AnimateController:
     def load_lora(self, pipeline):
         for lora in self.project.loras:
             lora_path = lora['path']
-            if lora_path == "":
+            # Check if path exists
+            if lora_path == "none" or not os.path.exists(os.path.join(self.loras_dir, lora_path)):
                 continue
+
             lora_alpha = lora['alpha']
             add_state_dict = {}
             print(f"loading lora {lora_path} with weight {lora_alpha}")
