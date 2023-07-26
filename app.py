@@ -246,6 +246,7 @@ def ui():
                     interactive=True,
                     value=controller.stable_diffusion_list[0]
                 )
+                controller.update_stable_diffusion(stable_diffusion_dropdown)
                 stable_diffusion_dropdown.change(fn=controller.update_stable_diffusion, inputs=[stable_diffusion_dropdown], outputs=[stable_diffusion_dropdown])
                 
                 stable_diffusion_refresh_button = gr.Button(value="\U0001F503", elem_classes="toolbutton")
@@ -261,6 +262,7 @@ def ui():
                     interactive=True,
                     value=controller.motion_module_list[0]
                 )
+                controller.update_motion_module(motion_module_dropdown)
                 motion_module_dropdown.change(fn=controller.update_motion_module, inputs=[motion_module_dropdown], outputs=[motion_module_dropdown])
                 
                 motion_module_refresh_button = gr.Button(value="\U0001F503", elem_classes="toolbutton")
@@ -275,6 +277,7 @@ def ui():
                     value=controller.personalized_model_list[0],
                     interactive=True,
                 )
+                controller.update_base_model(base_model_dropdown)
                 base_model_dropdown.change(fn=controller.update_base_model, inputs=[base_model_dropdown], outputs=[base_model_dropdown])
                 
                 lora_model_dropdown = gr.Dropdown(
