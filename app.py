@@ -242,7 +242,7 @@ def ui():
                     label="Pretrained Model Path",
                     choices=controller.stable_diffusion_list,
                     interactive=True,
-                    default=controller.stable_diffusion_list[0]
+                    value=controller.stable_diffusion_list[0]
                 )
                 stable_diffusion_dropdown.change(fn=controller.update_stable_diffusion, inputs=[stable_diffusion_dropdown], outputs=[stable_diffusion_dropdown])
                 
@@ -316,7 +316,7 @@ def ui():
                     context_length  = gr.Slider(label="Context length",        value=20, minimum=10,   maximum=40)
                     context_stride = gr.Slider(label="Context stride",        value=20, minimum=10,   maximum=40)
                     context_overlap = gr.Slider(label="Context overlap",        value=0, minimum=0,   maximum=10)
-                    fp16 = gr.Checkbox(label="FP16", default=True)
+                    fp16 = gr.Checkbox(label="FP16", value=True)
                     
                     with gr.Row():
                         seed_textbox = gr.Textbox(label="Seed", value=-1)
