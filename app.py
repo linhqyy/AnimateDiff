@@ -215,6 +215,8 @@ class AnimateController:
         with open(os.path.join(self.savedir, "logs.json"), "a") as f:
             f.write(json_str)
             f.write("\n\n")
+
+        print(save_sample_path)
             
         return gr.Video.update(value=save_sample_path)
         
@@ -257,6 +259,7 @@ def ui():
                     label="Select motion module",
                     choices=controller.motion_module_list,
                     interactive=True,
+                    value=controller.motion_module_list[0]
                 )
                 motion_module_dropdown.change(fn=controller.update_motion_module, inputs=[motion_module_dropdown], outputs=[motion_module_dropdown])
                 
@@ -269,6 +272,7 @@ def ui():
                 base_model_dropdown = gr.Dropdown(
                     label="Select base Dreambooth model (required)",
                     choices=controller.personalized_model_list,
+                    value=controller.personalized_model_list[0]
                     interactive=True,
                 )
                 base_model_dropdown.change(fn=controller.update_base_model, inputs=[base_model_dropdown], outputs=[base_model_dropdown])
@@ -357,4 +361,4 @@ def ui():
 
 if __name__ == "__main__":
     demo = ui()
-    demo.launch(share=True)
+    demo.launch(share=True, debug=True)
