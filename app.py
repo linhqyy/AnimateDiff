@@ -86,7 +86,7 @@ class AnimateController:
         self.stable_diffusion_list   = []
         self.motion_module_list      = []
         self.checkpoints_list = []
-        self.init_images = []
+        self.init_image_list = []
         
         self.refresh_stable_diffusion()
         self.refresh_motion_module()
