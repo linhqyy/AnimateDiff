@@ -404,7 +404,7 @@ def ui():
 
                 init_image_refresh_button = gr.Button(value="\U0001F503", elem_classes="toolbutton")
                 def update_init_image():
-                    controller.refresh_init_image()
+                    controller.refresh_init_images()
                     return gr.Dropdown.update(choices=controller.init_image_list)
                 init_image_refresh_button.click(fn=update_init_image, inputs=[], outputs=[init_image_dropdown])
 
