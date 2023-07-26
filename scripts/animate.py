@@ -38,10 +38,8 @@ def main(args):
         args.context_overlap = args.context_length // 2
 
     time_str = datetime.datetime.now().strftime("%Y-%m-%dT%H-%M-%S")
-    savedir = f"/content/drive/MyDrive/AI content/AnimateDiff/"
-    #savedir = f"/content/drive/MyDrive/AI content/Untitled Folder/{Path(args.config).stem}-{time_str}"
     extension = args.format
-    os.makedirs(savedir, exist_ok=True)
+    os.makedirs(args.savedir, exist_ok=True)
     inference_config = OmegaConf.load(args.inference_config)
 
     config  = OmegaConf.load(args.config)
@@ -182,6 +180,7 @@ if __name__ == "__main__":
     parser.add_argument("--inference_config",      type=str, default="configs/inference/inference.yaml")    
     parser.add_argument("--config",                type=str, required=True)
     parser.add_argument("--format",                type=str, default="gif")
+    parser.add_argument("--savedir",               type=str, default="output/")
 
     parser.add_argument("--fp32", action="store_true")
     parser.add_argument("--disable_inversions", action="store_true",
