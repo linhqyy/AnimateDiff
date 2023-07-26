@@ -409,8 +409,8 @@ def ui():
                 init_image_refresh_button.click(fn=update_init_image, inputs=[], outputs=[init_image_dropdown])
 
             # init_image = gr.Textbox(label="Init image", value="/content/AnimateDiff/configs/prompts/yoimiya-init.jpg")
-            prompt_textbox = gr.Textbox(label="Prompt", lines=2, value="best quality, masterpiece, 1girl, looking at viewer, blurry background, upper body, contemporary, dress")
-            negative_prompt_textbox = gr.Textbox(label="Negative prompt", lines=2)
+            prompt_textbox = gr.Textbox(label="Prompt", lines=2, value="1girl, yoimiya (genshin impact), origen, line, comet, wink, Masterpiece ，BestQuality ，UltraDetailed")
+            negative_prompt_textbox = gr.Textbox(label="Negative prompt", lines=2, value="NSFW, lr, nsfw,(sketch, duplicate, ugly, huge eyes, text, logo, monochrome, worst face, (bad and mutated hands:1.3), (worst quality:2.0), (low quality:2.0), (blurry:2.0), horror, geometry, bad_prompt_v2, (bad hands), (missing fingers), multiple limbs, bad anatomy, (interlocked fingers:1.2), Ugly Fingers, (extra digit and hands and fingers and legs and arms:1.4), crown braid, ((2girl)), (deformed fingers:1.2), (long fingers:1.2),succubus wings,horn,succubus horn,succubus hairstyle, (bad-artist-anime), bad-artist, bad hand, grayscale, skin spots, acnes, skin blemishes")
                 
             with gr.Row().style(equal_height=False):
                 with gr.Column():
@@ -422,9 +422,9 @@ def ui():
                     height_slider    = gr.Slider(label="Height",           value=512, minimum=256, maximum=1024, step=64)
                     length_slider    = gr.Slider(label="Animation length", value=16,  minimum=8,   maximum=24,   step=1)
                     cfg_scale_slider = gr.Slider(label="CFG Scale",        value=7.5, minimum=0,   maximum=20)
-                    context_length  = gr.Slider(label="Context length",        value=20, minimum=10,   maximum=40)
-                    context_overlap = gr.Slider(label="Context overlap",        value=20, minimum=10,   maximum=40)
-                    context_stride = gr.Slider(label="Context stride",        value=0, minimum=0,   maximum=20)
+                    context_length  = gr.Slider(label="Context length",        value=20, minimum=10,   maximum=40, step=1)
+                    context_overlap = gr.Slider(label="Context overlap",        value=20, minimum=10,   maximum=40, step=1)
+                    context_stride = gr.Slider(label="Context stride",        value=0, minimum=0,   maximum=20, step=1)
                     fp16 = gr.Checkbox(label="FP16", value=True)
                     
                     with gr.Row():
