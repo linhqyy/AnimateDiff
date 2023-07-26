@@ -161,12 +161,12 @@ class AnimateController:
     
     # Create backup of network
     def backup_network(self):
-        self.unet_backup = self.unet.weight.data.to(torch.device("cpu"), copy=True)
-        self.text_encoder_backup = self.text_encoder.weight.data.to(torch.device("cpu"), copy=True)
+        self.unet_backup = self.unet.state_dict().to(torch.device("cpu"), copy=True)
+        self.text_encoder_backup = self.text_encoder.state_dict().to(torch.device("cpu"), copy=True)
 
     def load_backup_network(self):
-        self.unet.weight.data.copy_(self.unet_backup)
-        self.text_encoder.weight.data.copy_(self.text_encoder_backup)
+        self.unet.state_dict().copy_(self.unet_backup)
+        self.text_encoder.state_dict().copy_(self.text_encoder_backup)
 
     # Load loras
     def load_lora(self, pipeline):
