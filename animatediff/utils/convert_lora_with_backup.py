@@ -109,6 +109,7 @@ def load_lora_weights(pipeline, checkpoint_path, multiplier, device, dtype):
     # directly update weight in diffusers model
     for layer, elems in updates.items():
         index += 1
+        print(layer)
 
         if "text" in layer:
             layer_infos = layer.split(LORA_PREFIX_TEXT_ENCODER + "_")[-1].split("_")
