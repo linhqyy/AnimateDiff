@@ -361,7 +361,7 @@ def ui():
                         if lora_model_dropdown == "none":
                             lora_path = "none"
                         else:
-                            lora_path = os.path.exists(os.path.join(controller.loras_dir, lora_model_dropdown))
+                            lora_path = os.path.join(controller.loras_dir, lora_model_dropdown)
                         controller.project.loras[index] = {
                             "path": lora_path,
                             "alpha": lora_alpha_slider
