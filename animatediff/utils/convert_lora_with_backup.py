@@ -10,7 +10,8 @@ LORA_PREFIX_UNET = "lora_unet"
 LORA_PREFIX_TEXT_ENCODER = "lora_te"
 
 def load_loras(pipeline, loras):
-    if loaded_loras == loras:
+    global loaded_loras
+    if loras == loaded_loras:
         print("No Loras changed")
     else:
         print("Loras changed")
@@ -28,6 +29,7 @@ def load_loras(pipeline, loras):
     return pipeline
 
 def restore_networks(pipeline):
+    global original_unet, original_text_encoder
     for temp_name in original_unet:
         curr_layer = pipeline.unet.__getattr__(temp_name)
         curr_layer.weight.data = original_weights[temp_name].clone().detach()
@@ -37,6 +39,7 @@ def restore_networks(pipeline):
 
 
 def backup_networks(pipeline, state_dict):
+    global original_unet, original_text_encoder
     updates = defaultdict(dict)
     for key, value in state_dict.items():
         # it is suggested to print out the key, it usually will be something like below
@@ -79,16 +82,14 @@ def backup_networks(pipeline, state_dict):
 
 # Modified code from https://github.com/huggingface/diffusers/issues/3064#issuecomment-1514082155
 def load_lora_weights(pipeline, checkpoint_path, multiplier, device, dtype):
-    global loaded_loras, original_weights
-
-    if (pipeline != current_pipeline):
-        backup = True
-        print("Backing up weights")
-        current_pipeline = pipeline
-        original_weights = {}    
-    else:
-        backup = False
-        print("Not Backing up weights")
+    # if (pipeline != current_pipeline):
+    #     backup = True
+    #     print("Backing up weights")
+    #     current_pipeline = pipeline
+    #     original_weights = {}    
+    # else:
+    #     backup = False
+    #     print("Not Backing up weights")
     
     # load base model
     pipeline.to(device)
@@ -104,10 +105,10 @@ def load_lora_weights(pipeline, checkpoint_path, multiplier, device, dtype):
         layer, elem = key.split('.', 1)
         updates[layer][elem] = value
 
-    # index = 0
+    index = 0
     # directly update weight in diffusers model
     for layer, elems in updates.items():
-        # index += 1
+        index += 1
 
         if "text" in layer:
             layer_infos = layer.split(LORA_PREFIX_TEXT_ENCODER + "_")[-1].split("_")
@@ -119,6 +120,7 @@ def load_lora_weights(pipeline, checkpoint_path, multiplier, device, dtype):
         # find the target layer
         temp_name = layer_infos.pop(0)
         while len(layer_infos) > -1:
+            print(temp_name)
             try:
                 curr_layer = curr_layer.__getattr__(temp_name)
                 if len(layer_infos) > 0:
@@ -142,9 +144,9 @@ def load_lora_weights(pipeline, checkpoint_path, multiplier, device, dtype):
         
         # if (backup):
         #     if original_weights[temp_name] is None:
-        #         original_weights[temp_name] = curr_layer.weight.data.clone().detach()
+        #         original_weights[index] = curr_layer.weight.data.clone().detach()
         # else:
-        #     curr_layer.weight.data = original_weights[temp_name].clone().detach()
+        #     curr_layer.weight.data = original_weights[index].clone().detach()
 
         # update weight
         if len(weight_up.shape) == 4:
