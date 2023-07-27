@@ -161,8 +161,8 @@ class AnimateController:
     
     # Create backup of network
     def backup_network(self):
-        self.unet_backup = self.unet.detach().clone()
-        self.text_encoder_backup = self.text_encoder.detach().clone()
+        self.unet_backup = self.unet.clone().detach()
+        self.text_encoder_backup = self.text_encoder.clone().detach()
 
     def load_backup_network(self):
         self.unet.copy_(self.unet_backup)
