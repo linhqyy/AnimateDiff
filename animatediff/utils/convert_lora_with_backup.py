@@ -50,6 +50,8 @@ def backup_networks(pipeline, state_dict):
         updates[layer][elem] = value
 
     for layer, elems in updates.items():
+        print("layer")
+        print(layer)
 
         if "text" in layer:
             layer_infos = layer.split(LORA_PREFIX_TEXT_ENCODER + "_")[-1].split("_")
@@ -60,6 +62,8 @@ def backup_networks(pipeline, state_dict):
 
         # find the target layer
         temp_name = layer_infos.pop(0)
+        print("temp_name")
+        print(temp_name)
         while len(layer_infos) > -1:
             try:
                 curr_layer = curr_layer.__getattr__(temp_name)
@@ -72,7 +76,7 @@ def backup_networks(pipeline, state_dict):
                     temp_name += "_" + layer_infos.pop(0)
                 else:
                     temp_name = layer_infos.pop(0)
-
+        print(temp_name)
         if "text" in layer:
             if temp_name not in original_unet:
                 original_unet[temp_name] = curr_layer.weight.data.clone().detach()
