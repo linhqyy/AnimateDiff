@@ -30,6 +30,8 @@ def load_loras(pipeline, loras, device):
         backup_networks(pipeline, network_updates)
         for lora in loras:
             lora_path = lora['path']
+            if lora_path == "none":
+                continue
             lora_alpha = lora['alpha']
             print(f"loading lora {lora_path} with weight {lora_alpha}")
             state_dict = load_file(lora_path, device=device)
@@ -61,7 +63,6 @@ def get_target_layer(layer, pipeline):
     temp_name = layer_infos.pop(0)
     while len(layer_infos) > -1:
         try:
-            print(temp_name)
             curr_layer = curr_layer.__getattr__(temp_name)
             if len(layer_infos) > 0:
                 temp_name = layer_infos.pop(0)
