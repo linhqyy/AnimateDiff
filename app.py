@@ -336,11 +336,11 @@ def ui():
             lora_dropdown_list = []
 
             with gr.Row():
-                number_of_LoRAs = gr.Slider(0, max_LoRAs, value=0, step=1, label="How many LoRAs to show:")
+                number_of_LoRAs = gr.Slider(0, max_LoRAs, value=2, step=1, label="How many LoRAs to show:")
                 lora_refresh_button = gr.Button(value="\U0001F503", elem_classes="toolbutton")
             
             for i in range(max_LoRAs):
-                with gr.Row(visible=False) as test:
+                with gr.Row(visible=True if i < 2 else False) as test:
 
                     # Change to use gr.State() instead of gr.Textbox()
                     lora_index = gr.Textbox(value=i, visible=False)
@@ -380,7 +380,7 @@ def ui():
             def update_number_of_LoRAs(number):
                 return [gr.Row.update(visible=True)]*number + [gr.Row.update(visible=False)]*(max_LoRAs-number)
 
-            number_of_LoRAs.change(fn=update_number_of_LoRAs, inputs=number_of_LoRAs, outputs=lora_ui_rows)
+            number_of_LoRAs.input(fn=update_number_of_LoRAs, inputs=number_of_LoRAs, outputs=lora_ui_rows)
 
             def update_lora_list():
                 controller.refresh_lora_models()
