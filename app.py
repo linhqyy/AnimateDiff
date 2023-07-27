@@ -310,7 +310,7 @@ def ui():
             [Arxiv Report](https://arxiv.org/abs/2307.04725) | [Project Page](https://animatediff.github.io/) | [Github](https://github.com/guoyww/animatediff/)
             """
         )
-        with gr.Accordion("1. Model checkpoints (select pretrained model path first", default_open=False):
+        with gr.Accordion("1. Model checkpoints (select pretrained model path first", open=False):
             with gr.Row():
                 stable_diffusion_dropdown = gr.Dropdown(
                     label="Pretrained Model Path",
@@ -378,11 +378,11 @@ def ui():
                     interactive=True,
                 )
 
-                init_image_refresh_button = gr.Button(value="\U0001F503", elem_classes="toolbutton")
-                def update_init_image():
-                    controller.refresh_init_images()
-                    return gr.Dropdown.update(choices=["none"] + controller.init_image_list)
-                init_image_refresh_button.click(fn=update_init_image, inputs=[], outputs=[init_image_dropdown])
+                    init_image_refresh_button = gr.Button(value="\U0001F503", elem_classes="toolbutton")
+                    def update_init_image():
+                        controller.refresh_init_images()
+                        return gr.Dropdown.update(choices=["none"] + controller.init_image_list)
+                    init_image_refresh_button.click(fn=update_init_image, inputs=[], outputs=[init_image_dropdown])
 
                 # init_image = gr.Textbox(label="Init image", value="/content/AnimateDiff/configs/prompts/yoimiya-init.jpg")
                 prompt_textbox = gr.Textbox(label="Prompt", lines=2, value="1girl, yoimiya (genshin impact), origen, line, comet, wink, Masterpiece ，BestQuality ，UltraDetailed")
@@ -394,10 +394,11 @@ def ui():
                 lora_alpha_slider_list = []
 
                 with gr.Row():
+                    gr.Markdown("Refresh Lora models")
                     lora_refresh_button = gr.Button(value="\U0001F503", elem_classes="toolbutton")
                 
                 for i in range(max_LoRAs):
-                    with gr.Row(visible=True if i < 2 else False) as test:
+                    with gr.Row() as test:
 
                         # Change to use gr.State() instead of gr.Textbox()
                         lora_index = gr.Textbox(value=i, visible=False)
