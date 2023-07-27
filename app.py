@@ -20,6 +20,7 @@ from animatediff.pipelines.pipeline_animation import AnimationPipeline
 from animatediff.utils.util import save_videos_grid
 from animatediff.utils.convert_from_ckpt import convert_ldm_unet_checkpoint, convert_ldm_clip_checkpoint, convert_ldm_vae_checkpoint
 from animatediff.utils.convert_lora_safetensor_to_diffusers import convert_lora
+from animatediff.utils.convert_lora_with_backup import load_lora_weights
 
 
 sample_idx     = 0
@@ -158,38 +159,19 @@ class AnimateController:
             self.text_encoder = convert_ldm_clip_checkpoint(base_model_state_dict)
             self.backup_network()
             return gr.Dropdown.update()
-    
-    # Create backup of network
-    def backup_network(self):
-        self.unet_backup = self.unet.clone().detach()
-        self.text_encoder_backup = self.text_encoder.clone().detach()
-
-    def load_backup_network(self):
-        self.unet.copy_(self.unet_backup)
-        self.text_encoder.copy_(self.text_encoder_backup)
 
     # Load loras
     def load_lora(self, pipeline):
-        if self.project.loras == self.loaded_loras:
-            print("Already loaded loras")
-        else:
-            self.loaded_loras = []
-            self.load_backup_network()
-            for lora in self.project.loras:
-                lora_path = lora['path']
-                # Check if path exists
-                if lora_path == "none" or not os.path.exists(os.path.join(self.loras_dir, lora_path)):
-                    continue
-
-                lora_alpha = lora['alpha']
-                add_state_dict = {}
-                print(f"loading lora {lora_path} with weight {lora_alpha}")
-                lora_path = os.path.join(self.loras_dir, lora_path)
-                with safe_open(lora_path, framework="pt", device="cpu") as f:
-                    for key in f.keys():
-                        add_state_dict[key] = f.get_tensor(key)
-                pipeline = convert_lora(pipeline, add_state_dict, alpha=lora_alpha)
-                self.loaded_loras.append(lora)
+        for lora in self.project.loras:
+            lora_path = lora['path']
+            # Check if path exists
+            if lora_path == "none" or not os.path.exists(os.path.join(self.loras_dir, lora_path)):
+                continue
+            lora_alpha = lora['alpha']
+            print(f"loading lora {lora_path} with weight {lora_alpha}")
+            lora_path = os.path.join(self.loras_dir, lora_path)
+            pipeline = load_lora_weights(pipeline, lora_path, alpha=lora_alpha, device="cuda", dtype=torch.float32)
+            self.loaded_loras.append(lora)
         return pipeline
 
 
