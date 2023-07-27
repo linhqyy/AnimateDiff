@@ -30,15 +30,11 @@ def load_loras(pipeline, loras, device):
         backup_networks(pipeline, network_updates)
         for lora in loras:
             lora_path = lora['path']
-            # Check if path exists
-            if lora_path == "none" or not os.path.exists(lora_path):
-                continue
             lora_alpha = lora['alpha']
             print(f"loading lora {lora_path} with weight {lora_alpha}")
             state_dict = load_file(lora_path, device=device)
-            backup_networks(pipeline, state_dict)
             pipeline = load_lora_weights(pipeline, state_dict, lora_alpha, device, torch.float32)
-            loaded_loras = loras
+        loaded_loras = loras
     return pipeline
 
 
