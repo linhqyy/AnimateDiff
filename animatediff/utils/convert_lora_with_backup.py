@@ -24,8 +24,8 @@ def load_loras(pipeline, loras, device):
             lora_alpha = lora['alpha']
             print(f"loading lora {lora_path} with weight {lora_alpha}")
             state_dict = load_file(lora_path, device=device)
-            backup_networks(pipeline, lora_path)
-            pipeline = load_lora_weights(pipeline, lora_path, lora_alpha, device, torch.float32)
+            backup_networks(pipeline, state_dict)
+            pipeline = load_lora_weights(pipeline, state_dict, lora_alpha, device, torch.float32)
             loaded_loras = loras
     return pipeline
 
@@ -82,7 +82,7 @@ def backup_networks(pipeline, state_dict):
 
 
 # Modified code from https://github.com/huggingface/diffusers/issues/3064#issuecomment-1514082155
-def load_lora_weights(pipeline, checkpoint_path, multiplier, device, dtype):
+def load_lora_weights(pipeline, state_dict, multiplier, device, dtype):
     # if (pipeline != current_pipeline):
     #     backup = True
     #     print("Backing up weights")
@@ -96,7 +96,6 @@ def load_lora_weights(pipeline, checkpoint_path, multiplier, device, dtype):
     pipeline.to(device)
 
     # load LoRA weight from .safetensors
-    state_dict = load_file(checkpoint_path, device=device)
 
     updates = defaultdict(dict)
     for key, value in state_dict.items():
