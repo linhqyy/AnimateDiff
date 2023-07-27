@@ -159,11 +159,28 @@ class AnimateController:
             self.text_encoder = convert_ldm_clip_checkpoint(base_model_state_dict)
             return gr.Dropdown.update()
 
-    # Load loras
-    def load_lora(self, pipeline):
-        pipeline = load_loras(pipeline=pipeline, loras=self.project.loras, device="cuda")
-        return pipeline
+    def process_lora_inputs(self, *args):
+        lora_paths = []
+        lora_alphas = []
+        for arg in args:
+            if isinstance(arg, str):
+                lora_paths.append(arg)
+            else:
+                lora_alphas.append(arg)
 
+        lora_list = []
+        for index, lora_path in enumerate(lora_paths):
+            lora_list.append({
+                "path": lora_path,
+                "alpha": lora_alphas[index]
+            })
+
+        return lora_list
+
+    # Load loras
+    def load_lora(self, pipeline, lora_list):
+        pipeline = load_loras(pipeline=pipeline, loras=lora_list, device="cuda")
+        return pipeline
 
     def animate(
         self,
@@ -184,7 +201,18 @@ class AnimateController:
         context_length,
         context_stride,
         context_overlap,
-        fp16
+        fp16,
+        lora_model_dropdown_0, # Need to find a better solution around this as Gradio doesn't allow dynamic number of inputs and refreshes values for direct inputs.
+        lora_model_dropdown_1,
+        lora_model_dropdown_2,
+        lora_model_dropdown_3,
+        lora_model_dropdown_4,
+        lora_alpha_slider_0,
+        lora_alpha_slider_1,
+        lora_alpha_slider_2,
+        lora_alpha_slider_3,
+        lora_alpha_slider_4,
+
     ):    
         if self.unet is None:
             raise gr.Error(f"Please select a pretrained model path.")
@@ -204,7 +232,21 @@ class AnimateController:
         # if self.lora_model_state_dict != {}:
         #     pipeline = convert_lora(pipeline, self.lora_model_state_dict, alpha=lora_alpha_slider)
 
-        pipeline = self.load_lora(pipeline)
+
+        # Load loras
+        lora_list = self.process_lora_inputs(
+                                        lora_model_dropdown_0, # Need to find a better solution around this as Gradio doesn't allow dynamic number of inputs and refreshes values for direct inputs.
+                                        lora_model_dropdown_1,
+                                        lora_model_dropdown_2,
+                                        lora_model_dropdown_3,
+                                        lora_model_dropdown_4,
+                                        lora_alpha_slider_0,
+                                        lora_alpha_slider_1,
+                                        lora_alpha_slider_2,
+                                        lora_alpha_slider_3,
+                                        lora_alpha_slider_4
+        )
+        pipeline = self.load_lora(pipeline, lora_list)
 
         pipeline.to("cuda")
 
@@ -268,12 +310,7 @@ def ui():
             [Arxiv Report](https://arxiv.org/abs/2307.04725) | [Project Page](https://animatediff.github.io/) | [Github](https://github.com/guoyww/animatediff/)
             """
         )
-        with gr.Column(variant="panel"):
-            gr.Markdown(
-                """
-                ### 1. Model checkpoints (select pretrained model path first).
-                """
-            )
+        with gr.Accordion("1. Model checkpoints (select pretrained model path first", default_open=False):
             with gr.Row():
                 stable_diffusion_dropdown = gr.Dropdown(
                     label="Pretrained Model Path",
@@ -332,64 +369,9 @@ def ui():
                 """
             )
 
-            lora_ui_rows = []
-            lora_dropdown_list = []
-
-            with gr.Row():
-                number_of_LoRAs = gr.Slider(0, max_LoRAs, value=2, step=1, label="How many LoRAs to show:")
-                lora_refresh_button = gr.Button(value="\U0001F503", elem_classes="toolbutton")
-            
-            for i in range(max_LoRAs):
-                with gr.Row(visible=True if i < 2 else False) as test:
-
-                    # Change to use gr.State() instead of gr.Textbox()
-                    lora_index = gr.Textbox(value=i, visible=False)
-
-                    lora_model_dropdown = gr.Dropdown(
-                            label=f"Select LoRA model {i} (optional)",
-                            choices=["none"] + controller.lora_list,
-                            value="none",
-                            interactive=True,
-                            elem_id=f"lora_model_dropdown-{i}",
-                        )
-                    
-                    
-                    lora_alpha_slider = gr.Slider(label="LoRA alpha", value=0.8, minimum=0, maximum=2, interactive=True)
-
-                    def update_lora(lora_index, lora_model_dropdown, lora_alpha_slider):
-                        index = int(lora_index)
-                        if lora_model_dropdown == "none":
-                            lora_path = "none"
-                        else:
-                            lora_path = os.path.join(controller.loras_dir, lora_model_dropdown)
-                        controller.project.loras[index] = {
-                            "path": lora_path,
-                            "alpha": lora_alpha_slider
-                        }
-                        print(controller.project.loras)
-                        return
-
-                    lora_model_dropdown.change(fn=update_lora, inputs=[lora_index, lora_model_dropdown, lora_alpha_slider])
-
-                    lora_alpha_slider.change(fn=update_lora, inputs=[lora_index, lora_model_dropdown, lora_alpha_slider])
-
-                    lora_dropdown_list.append(lora_model_dropdown)
-
-                lora_ui_rows.append(test)
-
-            def update_number_of_LoRAs(number):
-                return [gr.Row.update(visible=True)]*number + [gr.Row.update(visible=False)]*(max_LoRAs-number)
-
-            number_of_LoRAs.input(fn=update_number_of_LoRAs, inputs=number_of_LoRAs, outputs=lora_ui_rows)
-
-            def update_lora_list():
-                controller.refresh_lora_models()
-                return [gr.Dropdown.update(choices=["none"] + controller.lora_list)]*max_LoRAs
-
-            lora_refresh_button.click(fn=update_lora_list, inputs=[], outputs=lora_dropdown_list)
-
-            with gr.Row():
-                init_image_dropdown = gr.Dropdown(
+            with gr.Tab():
+                with gr.Row():
+                    init_image_dropdown = gr.Dropdown(
                     label="Select init image",
                     choices=["none"] + controller.init_image_list,
                     value="none",
@@ -402,10 +384,69 @@ def ui():
                     return gr.Dropdown.update(choices=["none"] + controller.init_image_list)
                 init_image_refresh_button.click(fn=update_init_image, inputs=[], outputs=[init_image_dropdown])
 
-            # init_image = gr.Textbox(label="Init image", value="/content/AnimateDiff/configs/prompts/yoimiya-init.jpg")
-            prompt_textbox = gr.Textbox(label="Prompt", lines=2, value="1girl, yoimiya (genshin impact), origen, line, comet, wink, Masterpiece ，BestQuality ，UltraDetailed")
-            negative_prompt_textbox = gr.Textbox(label="Negative prompt", lines=2, value="NSFW, lr, nsfw,(sketch, duplicate, ugly, huge eyes, text, logo, monochrome, worst face, (bad and mutated hands:1.3), (worst quality:2.0), (low quality:2.0), (blurry:2.0), horror, geometry, bad_prompt_v2, (bad hands), (missing fingers), multiple limbs, bad anatomy, (interlocked fingers:1.2), Ugly Fingers, (extra digit and hands and fingers and legs and arms:1.4), crown braid, ((2girl)), (deformed fingers:1.2), (long fingers:1.2),succubus wings,horn,succubus horn,succubus hairstyle, (bad-artist-anime), bad-artist, bad hand, grayscale, skin spots, acnes, skin blemishes")
+                # init_image = gr.Textbox(label="Init image", value="/content/AnimateDiff/configs/prompts/yoimiya-init.jpg")
+                prompt_textbox = gr.Textbox(label="Prompt", lines=2, value="1girl, yoimiya (genshin impact), origen, line, comet, wink, Masterpiece ，BestQuality ，UltraDetailed")
+                negative_prompt_textbox = gr.Textbox(label="Negative prompt", lines=2, value="NSFW, lr, nsfw,(sketch, duplicate, ugly, huge eyes, text, logo, monochrome, worst face, (bad and mutated hands:1.3), (worst quality:2.0), (low quality:2.0), (blurry:2.0), horror, geometry, bad_prompt_v2, (bad hands), (missing fingers), multiple limbs, bad anatomy, (interlocked fingers:1.2), Ugly Fingers, (extra digit and hands and fingers and legs and arms:1.4), crown braid, ((2girl)), (deformed fingers:1.2), (long fingers:1.2),succubus wings,horn,succubus horn,succubus hairstyle, (bad-artist-anime), bad-artist, bad hand, grayscale, skin spots, acnes, skin blemishes")
                 
+            with gr.Tab():
+                lora_ui_rows = []
+                lora_dropdown_list = []
+                lora_alpha_slider_list = []
+
+                with gr.Row():
+                    lora_refresh_button = gr.Button(value="\U0001F503", elem_classes="toolbutton")
+                
+                for i in range(max_LoRAs):
+                    with gr.Row(visible=True if i < 2 else False) as test:
+
+                        # Change to use gr.State() instead of gr.Textbox()
+                        lora_index = gr.Textbox(value=i, visible=False)
+
+                        lora_model_dropdown = gr.Dropdown(
+                                label=f"Select LoRA model {i} (optional)",
+                                choices=["none"] + controller.lora_list,
+                                value="none",
+                                interactive=True,
+                                elem_id=f"lora_model_dropdown-{i}",
+                            )
+                        
+                        
+                        lora_alpha_slider = gr.Slider(label="LoRA alpha", value=0.8, minimum=0, maximum=2, interactive=True)
+
+                        # def update_lora(lora_index, lora_model_dropdown, lora_alpha_slider):
+                        #     index = int(lora_index)
+                        #     if lora_model_dropdown == "none":
+                        #         lora_path = "none"
+                        #     else:
+                        #         lora_path = os.path.join(controller.loras_dir, lora_model_dropdown)
+                        #     controller.project.loras[index] = {
+                        #         "path": lora_path,
+                        #         "alpha": lora_alpha_slider
+                        #     }
+                        #     print(controller.project.loras)
+                        #     return
+
+                        # lora_model_dropdown.change(fn=update_lora, inputs=[lora_index, lora_model_dropdown, lora_alpha_slider])
+
+                        # lora_alpha_slider.change(fn=update_lora, inputs=[lora_index, lora_model_dropdown, lora_alpha_slider])
+
+                        lora_dropdown_list.append(lora_model_dropdown)
+                        lora_alpha_slider_list.append(lora_alpha_slider)
+
+                    lora_ui_rows.append(test)
+
+                # def update_number_of_LoRAs(number):
+                #     return [gr.Row.update(visible=True)]*number + [gr.Row.update(visible=False)]*(max_LoRAs-number)
+
+                # number_of_LoRAs.input(fn=update_number_of_LoRAs, inputs=number_of_LoRAs, outputs=lora_ui_rows)
+
+                def update_lora_list():
+                    controller.refresh_lora_models()
+                    return [gr.Dropdown.update(choices=["none"] + controller.lora_list)]*max_LoRAs
+
+                lora_refresh_button.click(fn=update_lora_list, inputs=[], outputs=lora_dropdown_list)
+
+               
             with gr.Row().style(equal_height=False):
                 with gr.Column():
                     with gr.Row():
@@ -451,7 +492,8 @@ def ui():
                     context_stride,
                     context_overlap,
                     fp16
-                ],
+                ] + lora_dropdown_list
+                + lora_alpha_slider_list,
                 outputs=[result_video]
             )
             

@@ -11,7 +11,7 @@ network_updates = defaultdict(dict)
 
 def load_loras(pipeline, loras, device):
     global loaded_loras, network_updates
-    if loaded_loras == tuple((x['path'], x['alpha']) for x in loras):
+    if loaded_loras == loras:
         print("No Loras changed")
     else:
         if loaded_loras is not None:
@@ -36,7 +36,7 @@ def load_loras(pipeline, loras, device):
             print(f"loading lora {lora_path} with weight {lora_alpha}")
             state_dict = load_file(lora_path, device=device)
             pipeline = load_lora_weights(pipeline, state_dict, lora_alpha, device, torch.float32)
-        loaded_loras = tuple((x['path'], x['alpha']) for x in loras)
+        loaded_loras = loras
     return pipeline
 
 

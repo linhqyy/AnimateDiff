@@ -307,7 +307,7 @@ class AnimationPipeline(DiffusionPipeline):
         video = []
         device = self._execution_device
         for frame_idx in tqdm(range(latents.shape[0])):
-            video.append(self.vae.decode(latents[frame_idx:frame_idx+1].to(device)).sample)
+            video.append(self.vae.decode(latents[frame_idx:frame_idx+1].to(device)).sample) # CHECK HERE 
         video = torch.cat(video)
         video = rearrange(video, "(b f) c h w -> b c f h w", f=video_length)
         video = (video / 2 + 0.5).clamp(0, 1)
