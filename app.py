@@ -169,7 +169,7 @@ class AnimateController:
             lora_alpha = lora['alpha']
             print(f"loading lora {lora_path} with weight {lora_alpha}")
             lora_path = os.path.join(self.loras_dir, lora_path)
-            pipeline = load_lora_weights(pipeline, lora_path, alpha=lora_alpha, device="cuda", dtype=torch.float32)
+            pipeline = load_lora_weights(pipeline, lora_path, multiplier=lora_alpha, device="cuda", dtype=torch.float32)
             self.loaded_loras.append(lora)
         return pipeline
 
