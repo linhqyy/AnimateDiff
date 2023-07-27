@@ -3,6 +3,7 @@
 This a fork of the official repo.
 
 ## ToDo
+- Seed -1 not working properly
 - LoRA is duplicating on every generation - Req fix
 - Init image
 - Better config details
