@@ -27,7 +27,7 @@ def load_loras(pipeline, loras, device):
             state_dict = load_file(lora_path, device=device)
             # Getting all network updates
             network_updates = get_network_updates(network_updates, state_dict=state_dict)
-            backup_networks(pipeline, network_updates)
+        backup_networks(pipeline, network_updates)
         for lora in loras:
             lora_path = lora['path']
             # Check if path exists
@@ -65,6 +65,7 @@ def get_target_layer(layer, pipeline):
     temp_name = layer_infos.pop(0)
     while len(layer_infos) > -1:
         try:
+            print(temp_name)
             curr_layer = curr_layer.__getattr__(temp_name)
             if len(layer_infos) > 0:
                 temp_name = layer_infos.pop(0)
