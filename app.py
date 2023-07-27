@@ -157,7 +157,6 @@ class AnimateController:
             self.unet.load_state_dict(converted_unet_checkpoint, strict=False)
 
             self.text_encoder = convert_ldm_clip_checkpoint(base_model_state_dict)
-            self.backup_network()
             return gr.Dropdown.update()
 
     # Load loras
