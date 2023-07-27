@@ -369,7 +369,7 @@ def ui():
                 """
             )
 
-            with gr.Tab():
+            with gr.Tab(label="Prompts"):
                 with gr.Row():
                     init_image_dropdown = gr.Dropdown(
                     label="Select init image",
@@ -388,7 +388,7 @@ def ui():
                 prompt_textbox = gr.Textbox(label="Prompt", lines=2, value="1girl, yoimiya (genshin impact), origen, line, comet, wink, Masterpiece ，BestQuality ，UltraDetailed")
                 negative_prompt_textbox = gr.Textbox(label="Negative prompt", lines=2, value="NSFW, lr, nsfw,(sketch, duplicate, ugly, huge eyes, text, logo, monochrome, worst face, (bad and mutated hands:1.3), (worst quality:2.0), (low quality:2.0), (blurry:2.0), horror, geometry, bad_prompt_v2, (bad hands), (missing fingers), multiple limbs, bad anatomy, (interlocked fingers:1.2), Ugly Fingers, (extra digit and hands and fingers and legs and arms:1.4), crown braid, ((2girl)), (deformed fingers:1.2), (long fingers:1.2),succubus wings,horn,succubus horn,succubus hairstyle, (bad-artist-anime), bad-artist, bad hand, grayscale, skin spots, acnes, skin blemishes")
                 
-            with gr.Tab():
+            with gr.Tab(label="LoRAs"):
                 lora_ui_rows = []
                 lora_dropdown_list = []
                 lora_alpha_slider_list = []
