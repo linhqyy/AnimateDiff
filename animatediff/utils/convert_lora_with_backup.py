@@ -9,7 +9,7 @@ original_text_encoder = {}
 LORA_PREFIX_UNET = "lora_unet"
 LORA_PREFIX_TEXT_ENCODER = "lora_te"
 
-def load_loras(pipeline, loras):
+def load_loras(pipeline, loras, device):
     global loaded_loras
     if loras == loaded_loras:
         print("No Loras changed")
@@ -23,8 +23,9 @@ def load_loras(pipeline, loras):
                 continue
             lora_alpha = lora['alpha']
             print(f"loading lora {lora_path} with weight {lora_alpha}")
+            state_dict = load_file(lora_path, device=device)
             backup_networks(pipeline, lora_path)
-            pipeline = load_lora_weights(pipeline, lora_path, lora_alpha, "cuda", torch.float32)
+            pipeline = load_lora_weights(pipeline, lora_path, lora_alpha, device, torch.float32)
             loaded_loras = loras
     return pipeline
 
@@ -32,10 +33,10 @@ def restore_networks(pipeline):
     global original_unet, original_text_encoder
     for temp_name in original_unet:
         curr_layer = pipeline.unet.__getattr__(temp_name)
-        curr_layer.weight.data = original_weights[temp_name].clone().detach()
+        curr_layer.weight.data = original_unet[temp_name].clone().detach()
     for temp_name in original_text_encoder:
         curr_layer = pipeline.text_encoder.__getattr__(temp_name)
-        curr_layer.weight.data = original_weights[temp_name].clone().detach()
+        curr_layer.weight.data = original_text_encoder[temp_name].clone().detach()
 
 
 def backup_networks(pipeline, state_dict):

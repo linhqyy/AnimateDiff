@@ -161,7 +161,7 @@ class AnimateController:
 
     # Load loras
     def load_lora(self, pipeline):
-        pipeline = load_loras(pipeline, self.project.loras)
+        pipeline = load_loras(pipeline=pipeline, loras=self.project.loras, device="cuda")
         return pipeline
 
 
