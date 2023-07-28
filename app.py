@@ -411,10 +411,15 @@ def ui():
                         # Change to use gr.State() instead of gr.Textbox()
                         lora_index = gr.Textbox(value=i, visible=False)
 
+                        if i < 2 and i < len(controller.lora_list):
+                            value = controller.lora_list[i]
+                        else:
+                            value = "none"
+
                         lora_model_dropdown = gr.Dropdown(
                                 label=f"Select LoRA model {i} (optional)",
                                 choices=["none"] + controller.lora_list,
-                                value="none",
+                                value=value,
                                 interactive=True,
                                 elem_id=f"lora_model_dropdown-{i}",
                             )
