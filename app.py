@@ -173,7 +173,7 @@ class AnimateController:
             if lora_path == "none":
                 continue
             else:
-                lora_path = os.path.join(self.loras_dir, lora_paths)
+                lora_path = os.path.join(self.loras_dir, lora_path)
             lora_list.append({
                 "path": lora_path,
                 "alpha": lora_alphas[index]
