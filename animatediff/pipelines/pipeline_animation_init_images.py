@@ -495,7 +495,7 @@ class AnimationPipeline(DiffusionPipeline):
         # TEST FIX INIT_IMAGES
         # Denoising loop
         num_warmup_steps = len(timesteps) - num_inference_steps * self.scheduler.order
-        # with self.progress_bar(total=total) as progress_bar:
+        with self.progress_bar(total=total) as progress_bar:
             # for i, t in enumerate(timesteps):
             #     noise_pred = torch.zeros((latents.shape[0] * (2 if do_classifier_free_guidance else 1),
             #                               *latents.shape[1:]), device=latents.device, dtype=latents_dtype)
@@ -527,7 +527,7 @@ class AnimationPipeline(DiffusionPipeline):
             #             callback(i, t, latents)
 
             # TEST FIX INIT_IMAGES
-        with self.progress_bar(total=num_inference_steps) as progress_bar:
+        # with self.progress_bar(total=num_inference_steps) as progress_bar:
             for i, t in enumerate(timesteps):
                 # expand the latents if we are doing classifier free guidance
                 latent_model_input = torch.cat([latents] * 2) if do_classifier_free_guidance else latents

@@ -195,7 +195,6 @@ class AnimateController:
             gr.Info(f"Please select a pretrained model path.")
             return gr.Dropdown.update(value=None)
         else:
-            print(checkpoint_dropdown)
             checkpoint_dropdown = os.path.join(self.checkpoints_dir, checkpoint_dropdown)
             base_model_state_dict = {}
             with safe_open(checkpoint_dropdown, framework="pt", device="cpu") as f:
