@@ -1,5 +1,5 @@
 # AnimateDiff
-![Preview UI](__assets__\figs\gradio2.png)
+<br><img src="__assets__/figs/gradio2.png" style="width: 50em; margin-top: 1em">
 
 This a fork of the official repo. Made specifically to run in Colab with gradio UI. Local requires 12GB VRAM
 
@@ -23,7 +23,9 @@ This a fork of the official repo. Made specifically to run in Colab with gradio 
 
 
 ## Output from default parameters for testing
-![Example out](__assets__\animations\example.gif)
+![Example out](__assets__/animations/example.gif)
+
+This should be the default parameters that are loaded when you first run. When the UI first loads. Click generate to see if you get the same results.
 
 ```
 {
