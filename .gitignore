@@ -7,3 +7,4 @@ __pycache__
 configs/custom_prompts
 samples
 models/StableDiffusion
+.vscode

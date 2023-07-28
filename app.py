@@ -20,9 +20,11 @@ from animatediff.pipelines.pipeline_animation import AnimationPipeline
 from animatediff.utils.util import save_videos_grid
 from animatediff.utils.convert_from_ckpt import convert_ldm_unet_checkpoint, convert_ldm_clip_checkpoint, convert_ldm_vae_checkpoint
 from animatediff.utils.convert_lora_safetensor_to_diffusers import convert_lora
+from animatediff.utils.convert_lora_with_backup import load_loras
 
 
 sample_idx     = 0
+max_LoRAs      = 5
 scheduler_dict = {
     "Euler": EulerDiscreteScheduler,
     "PNDM": PNDMScheduler,
@@ -38,6 +40,33 @@ css = """
 }
 """
 
+class ProjectConfigs:
+    def __init__(self):
+        self.date_created = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        self.prompt = ""
+        self.n_prompt = ""
+        self.sampler = ""
+        self.num_inference_steps = 20
+        self.guidance_scale = 7.5
+        self.width = 512
+        self.height = 512
+        self.video_length = 20
+        self.seed = -1
+        self.temporal_context = 20
+        self.overlap = 20
+        self.strides = 0
+        self.fp16 = True
+        self.loras = [{'path' : 'none', 'alpha': 0.8}]*5
+
+    def toJSON(self):
+        return json.dumps(self, default=lambda o: o.__dict__, 
+            sort_keys=True, indent=4)
+
+    def save_configs(self):
+        with open(os.path.join(self.savedir, f"temp{self.date_created}.json"), "a") as f:
+            f.write(self.toJSON())
+            f.write("\n\n")
+
 class AnimateController:
     def __init__(self):
         
@@ -45,14 +74,20 @@ class AnimateController:
         self.basedir                = os.getcwd()
         self.stable_diffusion_dir   = os.path.join(self.basedir, "models", "StableDiffusion")
         self.motion_module_dir      = os.path.join(self.basedir, "models", "Motion_Module")
-        self.personalized_model_dir = os.path.join(self.basedir, "models", "DreamBooth_LoRA")
+        self.checkpoints_dir = os.path.join(self.basedir, "models", "checkpoints")
+        self.init_images_dir        = os.path.join(self.basedir, "init_images")
         self.savedir                = os.path.join(self.basedir, "samples", datetime.now().strftime("Gradio-%Y-%m-%dT%H-%M-%S"))
         self.savedir_sample         = os.path.join(self.savedir, "sample")
         os.makedirs(self.savedir, exist_ok=True)
 
+        self.loras_dir = os.path.join(self.basedir, "models", "loras")
+        self.lora_list = []
+        self.project = ProjectConfigs()
+
         self.stable_diffusion_list   = []
         self.motion_module_list      = []
-        self.personalized_model_list = []
+        self.checkpoints_list = []
+        self.init_image_list = []
         
         self.refresh_stable_diffusion()
         self.refresh_motion_module()
@@ -71,13 +106,20 @@ class AnimateController:
     def refresh_stable_diffusion(self):
         self.stable_diffusion_list = glob(os.path.join(self.stable_diffusion_dir, "*/"))
 
+    def refresh_init_images(self):
+        self.init_image_list = glob(os.path.join(self.init_images_dir, "*"))
+
     def refresh_motion_module(self):
         motion_module_list = glob(os.path.join(self.motion_module_dir, "*.ckpt"))
         self.motion_module_list = [os.path.basename(p) for p in motion_module_list]
 
     def refresh_personalized_model(self):
-        personalized_model_list = glob(os.path.join(self.personalized_model_dir, "*.safetensors"))
-        self.personalized_model_list = [os.path.basename(p) for p in personalized_model_list]
+        personalized_model_list = glob(os.path.join(self.checkpoints_dir, "*.safetensors"))
+        self.checkpoints_list = [os.path.basename(p) for p in personalized_model_list]
+
+    def refresh_lora_models(self):
+        lora_list = glob(os.path.join(self.loras_dir, "*.safetensors"))
+        self.lora_list = [os.path.basename(p) for p in lora_list]
 
     def update_stable_diffusion(self, stable_diffusion_dropdown):
         self.tokenizer = CLIPTokenizer.from_pretrained(stable_diffusion_dropdown, subfolder="tokenizer")
@@ -102,7 +144,7 @@ class AnimateController:
             gr.Info(f"Please select a pretrained model path.")
             return gr.Dropdown.update(value=None)
         else:
-            base_model_dropdown = os.path.join(self.personalized_model_dir, base_model_dropdown)
+            base_model_dropdown = os.path.join(self.checkpoints_dir, base_model_dropdown)
             base_model_state_dict = {}
             with safe_open(base_model_dropdown, framework="pt", device="cpu") as f:
                 for key in f.keys():
@@ -117,15 +159,32 @@ class AnimateController:
             self.text_encoder = convert_ldm_clip_checkpoint(base_model_state_dict)
             return gr.Dropdown.update()
 
-    def update_lora_model(self, lora_model_dropdown):
-        lora_model_dropdown = os.path.join(self.personalized_model_dir, lora_model_dropdown)
-        self.lora_model_state_dict = {}
-        if lora_model_dropdown == "none": pass
-        else:
-            with safe_open(lora_model_dropdown, framework="pt", device="cpu") as f:
-                for key in f.keys():
-                    self.lora_model_state_dict[key] = f.get_tensor(key)
-        return gr.Dropdown.update()
+    def process_lora_inputs(self, *args):
+        lora_paths = []
+        lora_alphas = []
+        for arg in args:
+            if isinstance(arg, str):
+                lora_paths.append(arg)
+            else:
+                lora_alphas.append(arg)
+
+        lora_list = []
+        for index, lora_path in enumerate(lora_paths):
+            if lora_path == "none":
+                continue
+            else:
+                lora_path = os.path.join(self.loras_dir, lora_path)
+            lora_list.append({
+                "path": lora_path,
+                "alpha": lora_alphas[index]
+            })
+
+        return lora_list
+
+    # Load loras
+    def load_lora(self, pipeline, lora_list):
+        pipeline = load_loras(pipeline=pipeline, loras=lora_list, device="cuda")
+        return pipeline
 
     def animate(
         self,
@@ -133,6 +192,7 @@ class AnimateController:
         motion_module_dropdown,
         base_model_dropdown,
         lora_alpha_slider,
+        init_image,
         prompt_textbox, 
         negative_prompt_textbox, 
         sampler_dropdown, 
@@ -141,7 +201,22 @@ class AnimateController:
         length_slider, 
         height_slider, 
         cfg_scale_slider, 
-        seed_textbox
+        seed_textbox,
+        context_length,
+        context_stride,
+        context_overlap,
+        fp16,
+        lora_model_dropdown_0, # Need to find a better solution around this as Gradio doesn't allow dynamic number of inputs and refreshes values for direct inputs.
+        lora_model_dropdown_1,
+        lora_model_dropdown_2,
+        lora_model_dropdown_3,
+        lora_model_dropdown_4,
+        lora_alpha_slider_0,
+        lora_alpha_slider_1,
+        lora_alpha_slider_2,
+        lora_alpha_slider_3,
+        lora_alpha_slider_4,
+
     ):    
         if self.unet is None:
             raise gr.Error(f"Please select a pretrained model path.")
@@ -152,13 +227,30 @@ class AnimateController:
 
         if is_xformers_available(): self.unet.enable_xformers_memory_efficient_attention()
 
+
         pipeline = AnimationPipeline(
             vae=self.vae, text_encoder=self.text_encoder, tokenizer=self.tokenizer, unet=self.unet,
             scheduler=scheduler_dict[sampler_dropdown](**OmegaConf.to_container(self.inference_config.noise_scheduler_kwargs))
         ).to("cuda")
         
-        if self.lora_model_state_dict != {}:
-            pipeline = convert_lora(pipeline, self.lora_model_state_dict, alpha=lora_alpha_slider)
+        # if self.lora_model_state_dict != {}:
+        #     pipeline = convert_lora(pipeline, self.lora_model_state_dict, alpha=lora_alpha_slider)
+
+
+        # Load loras
+        lora_list = self.process_lora_inputs(
+                                        lora_model_dropdown_0, # Need to find a better solution around this as Gradio doesn't allow dynamic number of inputs and refreshes values for direct inputs.
+                                        lora_model_dropdown_1,
+                                        lora_model_dropdown_2,
+                                        lora_model_dropdown_3,
+                                        lora_model_dropdown_4,
+                                        lora_alpha_slider_0,
+                                        lora_alpha_slider_1,
+                                        lora_alpha_slider_2,
+                                        lora_alpha_slider_3,
+                                        lora_alpha_slider_4
+        )
+        pipeline = self.load_lora(pipeline, lora_list)
 
         pipeline.to("cuda")
 
@@ -166,14 +258,22 @@ class AnimateController:
         else: torch.seed()
         seed = torch.initial_seed()
         
+        # Handle none init image
+        if init_image == "none": init_image = None
+
         sample = pipeline(
-            prompt_textbox,
+            prompt              = prompt_textbox,
+            init_image          = init_image,
             negative_prompt     = negative_prompt_textbox,
             num_inference_steps = sample_step_slider,
             guidance_scale      = cfg_scale_slider,
             width               = width_slider,
             height              = height_slider,
             video_length        = length_slider,
+            temporal_context    = context_length,
+            strides             = context_stride + 1,
+            overlap             = context_overlap,
+            fp16                = fp16,
         ).videos
 
         save_sample_path = os.path.join(self.savedir_sample, f"{sample_idx}.mp4")
@@ -188,14 +288,18 @@ class AnimateController:
             "width": width_slider,
             "height": height_slider,
             "video_length": length_slider,
-            "seed": seed
+            "seed": seed,
+            "temporal_context": context_length,
+            "strides": context_stride,
+            "overlap": context_overlap,
+            "fp16": fp16,
         }
         json_str = json.dumps(sample_config, indent=4)
         with open(os.path.join(self.savedir, "logs.json"), "a") as f:
             f.write(json_str)
             f.write("\n\n")
             
-        return gr.Video.update(value=save_sample_path)
+        return save_sample_path
         
 
 controller = AnimateController()
@@ -210,17 +314,13 @@ def ui():
             [Arxiv Report](https://arxiv.org/abs/2307.04725) | [Project Page](https://animatediff.github.io/) | [Github](https://github.com/guoyww/animatediff/)
             """
         )
-        with gr.Column(variant="panel"):
-            gr.Markdown(
-                """
-                ### 1. Model checkpoints (select pretrained model path first).
-                """
-            )
+        with gr.Accordion("1. Model checkpoints (Click to expand)", open=False):
             with gr.Row():
                 stable_diffusion_dropdown = gr.Dropdown(
                     label="Pretrained Model Path",
                     choices=controller.stable_diffusion_list,
                     interactive=True,
+                    value=controller.stable_diffusion_list[0]
                 )
                 stable_diffusion_dropdown.change(fn=controller.update_stable_diffusion, inputs=[stable_diffusion_dropdown], outputs=[stable_diffusion_dropdown])
                 
@@ -235,6 +335,7 @@ def ui():
                     label="Select motion module",
                     choices=controller.motion_module_list,
                     interactive=True,
+                    value=controller.motion_module_list[0]
                 )
                 motion_module_dropdown.change(fn=controller.update_motion_module, inputs=[motion_module_dropdown], outputs=[motion_module_dropdown])
                 
@@ -246,29 +347,24 @@ def ui():
                 
                 base_model_dropdown = gr.Dropdown(
                     label="Select base Dreambooth model (required)",
-                    choices=controller.personalized_model_list,
+                    choices=controller.checkpoints_list,
+                    value=controller.checkpoints_list[0],
                     interactive=True,
                 )
+
                 base_model_dropdown.change(fn=controller.update_base_model, inputs=[base_model_dropdown], outputs=[base_model_dropdown])
-                
-                lora_model_dropdown = gr.Dropdown(
-                    label="Select LoRA model (optional)",
-                    choices=["none"] + controller.personalized_model_list,
-                    value="none",
-                    interactive=True,
-                )
-                lora_model_dropdown.change(fn=controller.update_lora_model, inputs=[lora_model_dropdown], outputs=[lora_model_dropdown])
-                
-                lora_alpha_slider = gr.Slider(label="LoRA alpha", value=0.8, minimum=0, maximum=2, interactive=True)
+
                 
                 personalized_refresh_button = gr.Button(value="\U0001F503", elem_classes="toolbutton")
                 def update_personalized_model():
                     controller.refresh_personalized_model()
-                    return [
-                        gr.Dropdown.update(choices=controller.personalized_model_list),
-                        gr.Dropdown.update(choices=["none"] + controller.personalized_model_list)
-                    ]
-                personalized_refresh_button.click(fn=update_personalized_model, inputs=[], outputs=[base_model_dropdown, lora_model_dropdown])
+                    return [gr.Dropdown.update(choices=controller.checkpoints_list)]
+                personalized_refresh_button.click(fn=update_personalized_model, inputs=[], outputs=[base_model_dropdown])
+
+                # Load default models
+                controller.update_stable_diffusion(stable_diffusion_dropdown.value)
+                controller.update_motion_module(motion_module_dropdown.value)
+                controller.update_base_model(base_model_dropdown.value)
 
         with gr.Column(variant="panel"):
             gr.Markdown(
@@ -276,10 +372,87 @@ def ui():
                 ### 2. Configs for AnimateDiff.
                 """
             )
-            
-            prompt_textbox = gr.Textbox(label="Prompt", lines=2)
-            negative_prompt_textbox = gr.Textbox(label="Negative prompt", lines=2)
+
+            with gr.Tab(label="Prompts"):
+                with gr.Row():
+                    init_image_dropdown = gr.Dropdown(
+                    label="Select init image (NOT YET WORKING)",
+                    choices=["none"] + controller.init_image_list,
+                    value="none",
+                    interactive=True,
+                )
+
+                    init_image_refresh_button = gr.Button(value="\U0001F503", elem_classes="toolbutton")
+                    def update_init_image():
+                        controller.refresh_init_images()
+                        return gr.Dropdown.update(choices=["none"] + controller.init_image_list)
+                    init_image_refresh_button.click(fn=update_init_image, inputs=[], outputs=[init_image_dropdown])
+
+                # init_image = gr.Textbox(label="Init image", value="/content/AnimateDiff/configs/prompts/yoimiya-init.jpg")
+                prompt_textbox = gr.Textbox(label="Prompt", lines=2, value="1girl, yoimiya (genshin impact), origen, line, comet, wink, Masterpiece ，BestQuality ，UltraDetailed")
+                negative_prompt_textbox = gr.Textbox(label="Negative prompt", lines=2, value="NSFW, lr, nsfw,(sketch, duplicate, ugly, huge eyes, text, logo, monochrome, worst face, (bad and mutated hands:1.3), (worst quality:2.0), (low quality:2.0), (blurry:2.0), horror, geometry, bad_prompt_v2, (bad hands), (missing fingers), multiple limbs, bad anatomy, (interlocked fingers:1.2), Ugly Fingers, (extra digit and hands and fingers and legs and arms:1.4), crown braid, ((2girl)), (deformed fingers:1.2), (long fingers:1.2),succubus wings,horn,succubus horn,succubus hairstyle, (bad-artist-anime), bad-artist, bad hand, grayscale, skin spots, acnes, skin blemishes")
                 
+            with gr.Tab(label="LoRAs"):
+                lora_ui_rows = []
+                lora_dropdown_list = []
+                lora_alpha_slider_list = []
+
+                with gr.Row():
+                    gr.Markdown("Refresh Lora models")
+                    lora_refresh_button = gr.Button(value="\U0001F503", elem_classes="toolbutton")
+                
+                controller.refresh_lora_models()
+                for i in range(max_LoRAs):
+                    with gr.Row() as test:
+
+                        # Change to use gr.State() instead of gr.Textbox()
+                        lora_index = gr.Textbox(value=i, visible=False)
+
+                        lora_model_dropdown = gr.Dropdown(
+                                label=f"Select LoRA model {i} (optional)",
+                                choices=["none"] + controller.lora_list,
+                                value="none",
+                                interactive=True,
+                                elem_id=f"lora_model_dropdown-{i}",
+                            )
+                        
+                        
+                        lora_alpha_slider = gr.Slider(label="LoRA alpha", value=0.8, minimum=0, maximum=2, interactive=True)
+
+                        # def update_lora(lora_index, lora_model_dropdown, lora_alpha_slider):
+                        #     index = int(lora_index)
+                        #     if lora_model_dropdown == "none":
+                        #         lora_path = "none"
+                        #     else:
+                        #         lora_path = os.path.join(controller.loras_dir, lora_model_dropdown)
+                        #     controller.project.loras[index] = {
+                        #         "path": lora_path,
+                        #         "alpha": lora_alpha_slider
+                        #     }
+                        #     print(controller.project.loras)
+                        #     return
+
+                        # lora_model_dropdown.change(fn=update_lora, inputs=[lora_index, lora_model_dropdown, lora_alpha_slider])
+
+                        # lora_alpha_slider.change(fn=update_lora, inputs=[lora_index, lora_model_dropdown, lora_alpha_slider])
+
+                        lora_dropdown_list.append(lora_model_dropdown)
+                        lora_alpha_slider_list.append(lora_alpha_slider)
+
+                    lora_ui_rows.append(test)
+
+                # def update_number_of_LoRAs(number):
+                #     return [gr.Row.update(visible=True)]*number + [gr.Row.update(visible=False)]*(max_LoRAs-number)
+
+                # number_of_LoRAs.input(fn=update_number_of_LoRAs, inputs=number_of_LoRAs, outputs=lora_ui_rows)
+
+                def update_lora_list():
+                    controller.refresh_lora_models()
+                    return [gr.Dropdown.update(choices=["none"] + controller.lora_list)]*max_LoRAs
+
+                lora_refresh_button.click(fn=update_lora_list, inputs=[], outputs=lora_dropdown_list)
+
+               
             with gr.Row().style(equal_height=False):
                 with gr.Column():
                     with gr.Row():
@@ -290,6 +463,10 @@ def ui():
                     height_slider    = gr.Slider(label="Height",           value=512, minimum=256, maximum=1024, step=64)
                     length_slider    = gr.Slider(label="Animation length", value=16,  minimum=8,   maximum=24,   step=1)
                     cfg_scale_slider = gr.Slider(label="CFG Scale",        value=7.5, minimum=0,   maximum=20)
+                    context_length  = gr.Slider(label="Context length",        value=20, minimum=10,   maximum=40, step=1)
+                    context_overlap = gr.Slider(label="Context overlap",        value=20, minimum=10,   maximum=40, step=1)
+                    context_stride = gr.Slider(label="Context stride",        value=0, minimum=0,   maximum=20, step=1)
+                    fp16 = gr.Checkbox(label="FP16", value=True)
                     
                     with gr.Row():
                         seed_textbox = gr.Textbox(label="Seed", value=-1)
@@ -307,6 +484,7 @@ def ui():
                     motion_module_dropdown,
                     base_model_dropdown,
                     lora_alpha_slider,
+                    init_image_dropdown,
                     prompt_textbox, 
                     negative_prompt_textbox, 
                     sampler_dropdown, 
@@ -316,7 +494,12 @@ def ui():
                     height_slider, 
                     cfg_scale_slider, 
                     seed_textbox,
-                ],
+                    context_length,
+                    context_stride,
+                    context_overlap,
+                    fp16
+                ] + lora_dropdown_list
+                + lora_alpha_slider_list,
                 outputs=[result_video]
             )
             
@@ -325,4 +508,5 @@ def ui():
 
 if __name__ == "__main__":
     demo = ui()
-    demo.launch(share=True)
+    demo.queue(concurrency_count=3)
+    demo.launch(share=True, debug=True)

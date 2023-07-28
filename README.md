@@ -1,6 +1,23 @@
 # AnimateDiff
 
-This repository is the official implementation of [AnimateDiff](https://arxiv.org/abs/2307.04725).
+This a fork of the official repo. Made specifically to run in Colab with gradio UI.
+
+- Google Colab: [Colab](https://colab.research.google.com/github/camenduru/AnimateDiff-colab/blob/main/AnimateDiff_colab.ipynb) (Original by [@camenduru](https://github.com/camenduru))
+
+## Features
+- Loading of multiple LoRAs (Without degrading the network with each generation)
+- Longer videos via moving context window (Credit to https://github.com/dajes/AnimateDiff/tree/longer_videos)
+
+## ToDo
+- Random seed doesn't seem to be working properly
+- Load models after UI load
+- Init image
+- Configs tab
+- Download models via UI
+- Load/Save from configs
+- Implement rife-ncnn-vulkan (Idea from https://github.com/neggles/animatediff-cli)
+
+## From original readme
 
 **[AnimateDiff: Animate Your Personalized Text-to-Image Diffusion Models without Specific Tuning](https://arxiv.org/abs/2307.04725)**
 </br>
@@ -76,6 +93,10 @@ cd AnimateDiff
 conda env create -f environment.yaml
 conda activate animatediff
 ```
+
+if using --format mp4
+
+`pip install "imageio[ffmpeg]"`
 
 ### Download Base T2I & Motion Module Checkpoints
 We provide two versions of our Motion Module, which are trained on stable-diffusion-v1-4 and finetuned on v1-5 seperately.
@@ -212,6 +233,43 @@ Here we demonstrate several best results we found in our experiments.
     </tr>
 </table>
 <p style="margin-left: 2em; margin-top: -1em">Model：<a href="https://civitai.com/models/33208/filmgirl-film-grain-lora-and-loha">FilmVelvia</a></p>
+
+### Longer generations
+You can also generate longer animations by using overlapping sliding windows.
+```
+python -m scripts.animate --config configs/prompts/{your_config}.yaml --L 64 --context_length 16 
+```
+##### Sliding window related parameters:
+
+```L``` - the length of the generated animation.
+
+```context_length``` - the length of the sliding window (limited by motion modules capacity), default to ```L```.
+
+```context_overlap``` - how much neighbouring contexts overlap. By default ```context_length``` / 2
+
+```context_stride``` - (2^```context_stride```) is a max stride between 2 neighbour frames. By default 0
+
+##### Extended this way gallery examples
+
+<table class="center">
+    <tr>
+    <td><img src="__assets__/animations/model_01_4x/01.gif"></td>
+    <td><img src="__assets__/animations/model_01_4x/02.gif"></td>
+    <td><img src="__assets__/animations/model_01_4x/03.gif"></td>
+    <td><img src="__assets__/animations/model_01_4x/04.gif"></td>
+    </tr>
+</table>
+<p style="margin-left: 2em; margin-top: -1em">Model：<a href="https://civitai.com/models/30240/toonyou">ToonYou</a></p>
+
+<table>
+    <tr>
+    <td><img src="__assets__/animations/model_03_4x/01.gif"></td>
+    <td><img src="__assets__/animations/model_03_4x/02.gif"></td>
+    <td><img src="__assets__/animations/model_03_4x/03.gif"></td>
+    <td><img src="__assets__/animations/model_03_4x/04.gif"></td>
+    </tr>
+</table>
+<p style="margin-left: 2em; margin-top: -1em">Model：<a href="https://civitai.com/models/4201/realistic-vision-v20">Realistic Vision V2.0</a></p>
 
 #### Community Cases
 Here are some samples contributed by the community artists. Create a Pull Request if you would like to show your results here😚.
