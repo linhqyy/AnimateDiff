@@ -254,7 +254,7 @@ class AnimateController:
         pipeline.to("cuda")
 
         if seed_textbox != -1 and seed_textbox != "": torch.manual_seed(int(seed_textbox))
-        else: torch.seed()
+        else: torch.manual_seed(random.randint(1, 1e14))
         seed = torch.initial_seed()
         
         # Handle none init image
