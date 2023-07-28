@@ -170,6 +170,10 @@ class AnimateController:
 
         lora_list = []
         for index, lora_path in enumerate(lora_paths):
+            if lora_path == "none":
+                continue
+            else:
+                lora_path = os.path.join(self.loras_dir, lora_paths)
             lora_list.append({
                 "path": lora_path,
                 "alpha": lora_alphas[index]
@@ -310,7 +314,7 @@ def ui():
             [Arxiv Report](https://arxiv.org/abs/2307.04725) | [Project Page](https://animatediff.github.io/) | [Github](https://github.com/guoyww/animatediff/)
             """
         )
-        with gr.Accordion("1. Model checkpoints (select pretrained model path first", open=False):
+        with gr.Accordion("1. Model checkpoints (Click to show opens)", open=False):
             with gr.Row():
                 stable_diffusion_dropdown = gr.Dropdown(
                     label="Pretrained Model Path",
