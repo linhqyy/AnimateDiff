@@ -1,8 +1,10 @@
 # AnimateDiff
 
-This a fork of the official repo. Made specifically to run in Colab with gradio UI.
+This a fork of the official repo. Made specifically to run in Colab with gradio UI. Local requires 12GB VRAM
 
-- Google Colab: [Colab](https://colab.research.google.com/github/camenduru/AnimateDiff-colab/blob/main/AnimateDiff_colab.ipynb) (Original by [@camenduru](https://github.com/camenduru))
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/hoalarious/AnimateDiff/blob/main/AnimateDiff_colab.ipynb)
+
+(Original colab by [@camenduru](https://github.com/camenduru))
 
 ## Features
 - Loading of multiple LoRAs (Without degrading the network with each generation)

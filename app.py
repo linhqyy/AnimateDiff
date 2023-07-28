@@ -76,8 +76,7 @@ class AnimateController:
         self.motion_module_dir      = os.path.join(self.basedir, "models", "Motion_Module")
         self.checkpoints_dir = os.path.join(self.basedir, "models", "checkpoints")
         self.init_images_dir        = os.path.join(self.basedir, "init_images")
-        self.savedir                = os.path.join(self.basedir, "samples", datetime.now().strftime("Gradio-%Y-%m-%dT%H-%M-%S"))
-        self.savedir_sample         = os.path.join(self.savedir, "sample")
+        self.savedir                = os.path.join(self.basedir, "output")
         os.makedirs(self.savedir, exist_ok=True)
 
         self.loras_dir = os.path.join(self.basedir, "models", "loras")
@@ -276,10 +275,13 @@ class AnimateController:
             fp16                = fp16,
         ).videos
 
-        save_sample_path = os.path.join(self.savedir_sample, f"{sample_idx}.mp4")
+        save_sample_path = os.path.join(self.savedir, f"{datetime.now().strftime('Gradio-%Y-%m-%dT%H-%M-%S')}.mp4")
         save_videos_grid(sample, save_sample_path)
     
         sample_config = {
+            "stable_diffusion": stable_diffusion_dropdown,
+            "motion_model": motion_module_dropdown,
+            "base_checkpoint": base_model_dropdown,
             "prompt": prompt_textbox,
             "n_prompt": negative_prompt_textbox,
             "sampler": sampler_dropdown,
@@ -293,9 +295,10 @@ class AnimateController:
             "strides": context_stride,
             "overlap": context_overlap,
             "fp16": fp16,
+            "lora_list": lora_list
         }
         json_str = json.dumps(sample_config, indent=4)
-        with open(os.path.join(self.savedir, "logs.json"), "a") as f:
+        with open(os.path.join(self.savedir, f"{datetime.now().strftime('Gradio-%Y-%m-%dT%H-%M-%S')}.json"), "a") as f:
             f.write(json_str)
             f.write("\n\n")
             
