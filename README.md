@@ -13,8 +13,7 @@ This a fork of the official repo. Made specifically to run in Colab with gradio 
 - 100% inference speed due to fp16 (Credit to https://github.com/dajes/AnimateDiff/tree/longer_videos)
 
 ## Todo
-- Random seed doesn't seem to be working properly
-- Load models after UI load
+- ~~Random seed doesn't seem to be working properly~~
 - Init image
 - Configs tab
 - Download models via UI

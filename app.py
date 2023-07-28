@@ -238,7 +238,7 @@ class AnimateController:
 
         # Load loras
         lora_list = self.process_lora_inputs(
-                                        lora_model_dropdown_0, # Need to find a better solution around this as Gradio doesn't allow dynamic number of inputs and refreshes values for direct inputs.
+                                        lora_model_dropdown_0, # Need to find a better solution around this as Gradio doesn't allow dynamic number of inputs and refreshes values for direct inputs. Maybe use tuple as input?
                                         lora_model_dropdown_1,
                                         lora_model_dropdown_2,
                                         lora_model_dropdown_3,
@@ -256,6 +256,8 @@ class AnimateController:
         if seed_textbox != -1 and seed_textbox != "": torch.manual_seed(int(seed_textbox))
         else: torch.manual_seed(random.randint(1, 1e14))
         seed = torch.initial_seed()
+        print(seed_textbox)
+        print(seed)
         
         # Handle none init image
         if init_image == "none": init_image = None
