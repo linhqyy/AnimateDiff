@@ -371,10 +371,10 @@ def base_model_selection_ui():
         stable_diffusion_dropdown.change(fn=controller.update_stable_diffusion, inputs=[stable_diffusion_dropdown], outputs=[stable_diffusion_dropdown])
         
         stable_diffusion_refresh_button = gr.Button(value="\U0001F503", elem_classes="toolbutton")
-        def update_stable_diffusion():
+        def update_stable_diffusion_list():
             controller.refresh_stable_diffusion()
             return gr.Dropdown.update(choices=controller.stable_diffusion_list)
-        stable_diffusion_refresh_button.click(fn=update_stable_diffusion, inputs=[], outputs=[stable_diffusion_dropdown])
+        stable_diffusion_refresh_button.click(fn=update_stable_diffusion_list, inputs=[], outputs=[stable_diffusion_dropdown])
 
     with gr.Row():
         motion_module_dropdown = gr.Dropdown(
@@ -383,13 +383,14 @@ def base_model_selection_ui():
             interactive=True,
             value=controller.motion_module_list[0]
         )
-        motion_module_dropdown.change(fn=controller.update_motion_module, inputs=[motion_module_dropdown], outputs=[motion_module_dropdown])
+        motion_module_dropdown.change(fn=controller.motion_module_dropdown_list, inputs=[motion_module_dropdown], outputs=[motion_module_dropdown])
         
         motion_module_refresh_button = gr.Button(value="\U0001F503", elem_classes="toolbutton")
-        def update_motion_module():
+        def update_motion_module_list():
             controller.refresh_motion_module()
             return gr.Dropdown.update(choices=controller.motion_module_list)
-        motion_module_refresh_button.click(fn=update_motion_module, inputs=[], outputs=[motion_module_dropdown])
+        
+        motion_module_refresh_button.click(fn=update_motion_module_list, inputs=[], outputs=[motion_module_dropdown])
         
         checkpoint_dropdown = gr.Dropdown(
             label="Select base Dreambooth model (required)",
@@ -402,10 +403,10 @@ def base_model_selection_ui():
 
         
         checkpoint_refresh_button = gr.Button(value="\U0001F503", elem_classes="toolbutton")
-        def update_checkpoints():
+        def update_checkpoints_list():
             controller.refresh_checkpoints()
             return [gr.Dropdown.update(choices=controller.checkpoints_list)]
-        checkpoint_refresh_button.click(fn=update_checkpoints, inputs=[], outputs=[checkpoint_dropdown])
+        checkpoint_refresh_button.click(fn=update_checkpoints_list, inputs=[], outputs=[checkpoint_dropdown])
 
         # Load default models
         # controller.update_stable_diffusion(stable_diffusion_dropdown.value)

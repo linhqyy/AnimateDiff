@@ -16,7 +16,7 @@ This a fork of the official repo. Made specifically to run in Colab with gradio 
 - ~~Random seed doesn't seem to be working properly~~
 - Init image
 - Configs tab
-- Download models via UI
+- ~~Download models via UI~~
 - Load/Save from configs
 - Implement rife-ncnn-vulkan (Idea from https://github.com/neggles/animatediff-cli)
 
