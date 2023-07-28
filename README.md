@@ -1,13 +1,22 @@
 # AnimateDiff
 
-This a fork of the official repo.
+This a fork of the official repo. Made specifically to run in Colab with gradio UI.
+
+- Google Colab: [Colab](https://colab.research.google.com/github/camenduru/AnimateDiff-colab/blob/main/AnimateDiff_colab.ipynb) (Original by [@camenduru](https://github.com/camenduru))
+
+## Features
+- Loading of multiple LoRAs (Without degrading the network with each generation)
+- Longer videos via moving context window (Credit to https://github.com/dajes/AnimateDiff/tree/longer_videos)
 
 ## ToDo
-- Seed -1 not working properly
-- LoRA is duplicating on every generation - Req fix
+- Random seed doesn't seem to be working properly
 - Init image
-- Better config details
-- Better coherency
+- Configs tab
+- Download models via UI
+- Load/Save from configs
+- Implement rife-ncnn-vulkan (Idea from https://github.com/neggles/animatediff-cli)
+
+## From original readme
 
 **[AnimateDiff: Animate Your Personalized Text-to-Image Diffusion Models without Specific Tuning](https://arxiv.org/abs/2307.04725)**
 </br>

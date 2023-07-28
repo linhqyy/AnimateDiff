@@ -376,7 +376,7 @@ def ui():
             with gr.Tab(label="Prompts"):
                 with gr.Row():
                     init_image_dropdown = gr.Dropdown(
-                    label="Select init image",
+                    label="Select init image (NOT YET WORKING)",
                     choices=["none"] + controller.init_image_list,
                     value="none",
                     interactive=True,
@@ -401,6 +401,7 @@ def ui():
                     gr.Markdown("Refresh Lora models")
                     lora_refresh_button = gr.Button(value="\U0001F503", elem_classes="toolbutton")
                 
+                controller.refresh_lora_models()
                 for i in range(max_LoRAs):
                     with gr.Row() as test:
 
