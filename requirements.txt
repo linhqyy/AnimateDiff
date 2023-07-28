@@ -14,4 +14,3 @@ gradio
 pillow==8.4.0
 # triton==2.0.0
 imageio[ffmpeg]
-apscheduler
