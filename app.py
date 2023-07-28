@@ -194,6 +194,7 @@ class AnimateController:
             gr.Info(f"Please select a pretrained model path.")
             return gr.Dropdown.update(value=None)
         else:
+            print(base_model_dropdown)
             base_model_dropdown = os.path.join(self.checkpoints_dir, base_model_dropdown)
             base_model_state_dict = {}
             with safe_open(base_model_dropdown, framework="pt", device="cpu") as f:
@@ -306,8 +307,6 @@ class AnimateController:
         if seed_textbox != "-1" and seed_textbox != "": torch.manual_seed(int(seed_textbox))
         else: torch.manual_seed(random.randint(1, 1e14))
         seed = torch.initial_seed()
-        print(seed_textbox)
-        print(seed)
         
         # Handle none init image
         if init_image == "none": init_image = None
@@ -400,7 +399,6 @@ def base_model_selection_ui():
         )
 
         checkpoint_dropdown.change(fn=controller.update_base_model, inputs=[checkpoint_dropdown], outputs=[checkpoint_dropdown])
-
         
         checkpoint_refresh_button = gr.Button(value="\U0001F503", elem_classes="toolbutton")
         def update_checkpoints_list():
