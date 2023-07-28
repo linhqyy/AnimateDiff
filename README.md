@@ -10,6 +10,7 @@ This a fork of the official repo. Made specifically to run in Colab with gradio 
 
 ## ToDo
 - Random seed doesn't seem to be working properly
+- Load models after UI load
 - Init image
 - Configs tab
 - Download models via UI

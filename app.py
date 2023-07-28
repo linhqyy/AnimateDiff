@@ -314,7 +314,7 @@ def ui():
             [Arxiv Report](https://arxiv.org/abs/2307.04725) | [Project Page](https://animatediff.github.io/) | [Github](https://github.com/guoyww/animatediff/)
             """
         )
-        with gr.Accordion("1. Model checkpoints (Click to show opens)", open=False):
+        with gr.Accordion("1. Model checkpoints (Click to expand)", open=False):
             with gr.Row():
                 stable_diffusion_dropdown = gr.Dropdown(
                     label="Pretrained Model Path",
