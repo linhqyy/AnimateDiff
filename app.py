@@ -383,7 +383,7 @@ def base_model_selection_ui():
             interactive=True,
             value=controller.motion_module_list[0]
         )
-        motion_module_dropdown.change(fn=controller.motion_module_dropdown_list, inputs=[motion_module_dropdown], outputs=[motion_module_dropdown])
+        motion_module_dropdown.change(fn=controller.update_motion_module, inputs=[motion_module_dropdown], outputs=[motion_module_dropdown])
         
         motion_module_refresh_button = gr.Button(value="\U0001F503", elem_classes="toolbutton")
         def update_motion_module_list():
