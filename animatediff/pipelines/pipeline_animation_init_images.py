@@ -311,7 +311,8 @@ class AnimationPipeline(DiffusionPipeline):
         device = self._execution_device
         for frame_idx in tqdm(range(latents.shape[0])):
             # TEST FIX INIT_IMAGES
-            video.append(self.vae.decode(latents[frame_idx:frame_idx+1].to(device)).sample) # CHECK HERE 
+            # video.append(self.vae.decode(latents[frame_idx:frame_idx+1].to(device)).sample) # CHECK HERE 
+            video.append(self.vae.decode(latents[frame_idx:frame_idx+1]).sample)
         video = torch.cat(video)
         video = rearrange(video, "(b f) c h w -> b c f h w", f=video_length)
         video = (video / 2 + 0.5).clamp(0, 1)
@@ -485,12 +486,13 @@ class AnimationPipeline(DiffusionPipeline):
         )
         latents_dtype = latents.dtype
 
+        # TEST FIX INIT_IMAGES
         # Prepare extra step kwargs.
-        extra_step_kwargs = self.prepare_extra_step_kwargs(generator, eta)
-        total = sum(
-            len(list(seq_policy(i, num_inference_steps, latents.shape[2], temporal_context, strides, overlap)))
-            for i in range(len(timesteps))
-        )
+        # extra_step_kwargs = self.prepare_extra_step_kwargs(generator, eta)
+        # total = sum(
+        #     len(list(seq_policy(i, num_inference_steps, latents.shape[2], temporal_context, strides, overlap)))
+        #     for i in range(len(timesteps))
+        # )
 
         # TEST FIX INIT_IMAGES
         # Denoising loop
