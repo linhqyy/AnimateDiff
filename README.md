@@ -25,7 +25,7 @@ This a fork of the official repo. Made specifically to run in Colab with gradio 
 ## Output from default parameters for testing
 ![Example out](__assets__/animations/example.gif)
 
-This should be the default parameters that are loaded when you first run. When the UI first loads. Click generate to see if you get the same results.
+This should be the default parameters that are loaded when you first run. When the UI first loads. Click generate to see if you get the same results. Just input the seed: 86529444.
 
 ```
 {
