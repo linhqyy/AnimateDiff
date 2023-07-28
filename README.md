@@ -59,7 +59,14 @@ This should be the default parameters that are loaded when you first run. When t
 
 ```
 
+## Definitions
+```
+context_length: the length of the sliding window (limited by motion modules capacity), default to L.
+context_overlap: how much neighbouring contexts overlap. By default context_length / 2
+context_stride: (2^context_stride) is a max stride between 2 neighbour frames. By default 0
 
+By dajes @ https://github.com/guoyww/AnimateDiff/pull/25
+```
 
 
 ## From original readme

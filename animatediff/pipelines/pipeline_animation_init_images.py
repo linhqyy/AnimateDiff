@@ -488,7 +488,7 @@ class AnimationPipeline(DiffusionPipeline):
 
         # TEST FIX INIT_IMAGES
         # Prepare extra step kwargs.
-        # extra_step_kwargs = self.prepare_extra_step_kwargs(generator, eta)
+        extra_step_kwargs = self.prepare_extra_step_kwargs(generator, eta)
         # total = sum(
         #     len(list(seq_policy(i, num_inference_steps, latents.shape[2], temporal_context, strides, overlap)))
         #     for i in range(len(timesteps))
