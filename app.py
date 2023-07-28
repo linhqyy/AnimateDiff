@@ -141,7 +141,9 @@ class AnimateController:
         self.refresh_stable_diffusion()
         self.refresh_motion_module()
         self.refresh_checkpoints()
-        
+        self.refresh_lora_models()
+        self.refresh_init_images()
+
         # config models
         self.tokenizer             = None
         self.text_encoder          = None
@@ -421,7 +423,6 @@ def lora_selection_ui():
         gr.Markdown("Refresh Lora models")
         lora_refresh_button = gr.Button(value="\U0001F503", elem_classes="toolbutton")
     
-    controller.refresh_lora_models()
     for i in range(max_LoRAs):
         with gr.Row():
             if i < 2 and i < len(controller.lora_list):
