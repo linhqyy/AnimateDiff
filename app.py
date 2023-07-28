@@ -23,6 +23,10 @@ from animatediff.utils.convert_lora_safetensor_to_diffusers import convert_lora
 from animatediff.utils.convert_lora_with_backup import load_loras
 
 
+import requests
+import tqdm
+import re
+
 sample_idx     = 0
 max_LoRAs      = 5
 scheduler_dict = {
@@ -39,6 +43,52 @@ css = """
     height: 2.5em;
 }
 """
+
+def download_url(url, headers=None, filename=None, destination_path=None):
+    if headers is None:
+        headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3"}
+
+    response = requests.get(url, stream=True, headers=headers)
+    response.raise_for_status()
+
+    if filename is None:
+        content_disposition = response.headers.get('content-disposition')
+        if content_disposition:
+            filename = re.findall('filename="?([^"]*)', content_disposition)
+            if len(filename) != 0:
+                filename = filename[0]
+            else:
+                raise ValueError("Cannot determine filename from headers. Please provide a filename.")
+        else:
+            raise ValueError("Cannot determine filename from headers. Please provide a filename.")
+
+    total_size = response.headers.get('content-length')
+    if total_size is not None:
+        total_size = int(total_size)
+        progress_bar = tqdm.tqdm(total=total_size, unit='iB', unit_scale=True)
+    else:
+        progress_bar = tqdm.tqdm(unit='iB', unit_scale=True)
+
+    filepath = os.path.join(destination_path, filename)
+    with open(filepath, 'wb') as file:
+        for data in response.iter_content(chunk_size=1024):
+            progress_bar.update(len(data))
+            file.write(data)
+
+    progress_bar.close()
+    if total_size is not None and progress_bar.n != total_size:
+        raise ValueError("ERROR, something went wrong")
+
+    print(f"Download completed. File saved to {filepath}")
+
+    return filepath
+
+def download_checkpoint(url, progress=gr.Progress(track_tqdm=True)):
+    return download_url(url=url, destination_path=controller.checkpoints_dir)
+
+def download_loras(url, progress=gr.Progress(track_tqdm=True)):
+    return download_url(url=url, destination_path=controller.loras_dir)
+
 
 class ProjectConfigs:
     def __init__(self):
@@ -74,12 +124,12 @@ class AnimateController:
         self.basedir                = os.getcwd()
         self.stable_diffusion_dir   = os.path.join(self.basedir, "models", "StableDiffusion")
         self.motion_module_dir      = os.path.join(self.basedir, "models", "Motion_Module")
-        self.checkpoints_dir = os.path.join(self.basedir, "models", "checkpoints")
+        self.checkpoints_dir        = os.path.join(self.basedir, "models", "checkpoints")
+        self.loras_dir              = os.path.join(self.basedir, "models", "loras")
         self.init_images_dir        = os.path.join(self.basedir, "init_images")
         self.savedir                = os.path.join(self.basedir, "output")
         os.makedirs(self.savedir, exist_ok=True)
 
-        self.loras_dir = os.path.join(self.basedir, "models", "loras")
         self.lora_list = []
         self.project = ProjectConfigs()
 
@@ -190,7 +240,6 @@ class AnimateController:
         stable_diffusion_dropdown,
         motion_module_dropdown,
         base_model_dropdown,
-        lora_alpha_slider,
         init_image,
         prompt_textbox, 
         negative_prompt_textbox, 
@@ -310,66 +359,98 @@ class AnimateController:
 controller = AnimateController()
 
 
-def ui():
-    with gr.Blocks(css=css) as demo:
-        gr.Markdown(
-            """
-            # [AnimateDiff: Animate Your Personalized Text-to-Image Diffusion Models without Specific Tuning](https://arxiv.org/abs/2307.04725)
-            Yuwei Guo, Ceyuan Yang*, Anyi Rao, Yaohui Wang, Yu Qiao, Dahua Lin, Bo Dai (*Corresponding Author)<br>
-            [Arxiv Report](https://arxiv.org/abs/2307.04725) | [Project Page](https://animatediff.github.io/) | [Github](https://github.com/guoyww/animatediff/)
-            """
+def base_model_selection_ui():
+    with gr.Row():
+        stable_diffusion_dropdown = gr.Dropdown(
+            label="Pretrained Model Path",
+            choices=controller.stable_diffusion_list,
+            interactive=True,
+            value=controller.stable_diffusion_list[0]
         )
-        with gr.Accordion("1. Model checkpoints (Click to expand)", open=False):
-            with gr.Row():
-                stable_diffusion_dropdown = gr.Dropdown(
-                    label="Pretrained Model Path",
-                    choices=controller.stable_diffusion_list,
+        stable_diffusion_dropdown.change(fn=controller.update_stable_diffusion, inputs=[stable_diffusion_dropdown], outputs=[stable_diffusion_dropdown])
+        
+        stable_diffusion_refresh_button = gr.Button(value="\U0001F503", elem_classes="toolbutton")
+        def update_stable_diffusion():
+            controller.refresh_stable_diffusion()
+            return gr.Dropdown.update(choices=controller.stable_diffusion_list)
+        stable_diffusion_refresh_button.click(fn=update_stable_diffusion, inputs=[], outputs=[stable_diffusion_dropdown])
+
+    with gr.Row():
+        motion_module_dropdown = gr.Dropdown(
+            label="Select motion module",
+            choices=controller.motion_module_list,
+            interactive=True,
+            value=controller.motion_module_list[0]
+        )
+        motion_module_dropdown.change(fn=controller.update_motion_module, inputs=[motion_module_dropdown], outputs=[motion_module_dropdown])
+        
+        motion_module_refresh_button = gr.Button(value="\U0001F503", elem_classes="toolbutton")
+        def update_motion_module():
+            controller.refresh_motion_module()
+            return gr.Dropdown.update(choices=controller.motion_module_list)
+        motion_module_refresh_button.click(fn=update_motion_module, inputs=[], outputs=[motion_module_dropdown])
+        
+        base_model_dropdown = gr.Dropdown(
+            label="Select base Dreambooth model (required)",
+            choices=controller.checkpoints_list,
+            value=controller.checkpoints_list[0],
+            interactive=True,
+        )
+
+        base_model_dropdown.change(fn=controller.update_base_model, inputs=[base_model_dropdown], outputs=[base_model_dropdown])
+
+        
+        personalized_refresh_button = gr.Button(value="\U0001F503", elem_classes="toolbutton")
+        def update_personalized_model():
+            controller.refresh_personalized_model()
+            return [gr.Dropdown.update(choices=controller.checkpoints_list)]
+        personalized_refresh_button.click(fn=update_personalized_model, inputs=[], outputs=[base_model_dropdown])
+
+        # Load default models
+        # controller.update_stable_diffusion(stable_diffusion_dropdown.value)
+        # controller.update_motion_module(motion_module_dropdown.value)
+        # controller.update_base_model(base_model_dropdown.value)
+
+        return stable_diffusion_dropdown, motion_module_dropdown, base_model_dropdown
+
+def lora_selection_ui():
+    lora_dropdown_list = []
+    lora_alpha_slider_list = []
+
+    with gr.Row():
+        gr.Markdown("Refresh Lora models")
+        lora_refresh_button = gr.Button(value="\U0001F503", elem_classes="toolbutton")
+    
+    for i in range(max_LoRAs):
+        with gr.Row():
+            lora_model_dropdown = gr.Dropdown(
+                    label=f"Select LoRA model {i} (optional)",
+                    choices=["none"] + controller.lora_list,
+                    value="none",
                     interactive=True,
-                    value=controller.stable_diffusion_list[0]
+                    elem_id=f"lora_model_dropdown-{i}",
                 )
-                stable_diffusion_dropdown.change(fn=controller.update_stable_diffusion, inputs=[stable_diffusion_dropdown], outputs=[stable_diffusion_dropdown])
-                
-                stable_diffusion_refresh_button = gr.Button(value="\U0001F503", elem_classes="toolbutton")
-                def update_stable_diffusion():
-                    controller.refresh_stable_diffusion()
-                    return gr.Dropdown.update(choices=controller.stable_diffusion_list)
-                stable_diffusion_refresh_button.click(fn=update_stable_diffusion, inputs=[], outputs=[stable_diffusion_dropdown])
+            
+            
+            lora_alpha_slider = gr.Slider(label="LoRA alpha", value=0.8, minimum=0, maximum=2, interactive=True)
 
-            with gr.Row():
-                motion_module_dropdown = gr.Dropdown(
-                    label="Select motion module",
-                    choices=controller.motion_module_list,
-                    interactive=True,
-                    value=controller.motion_module_list[0]
-                )
-                motion_module_dropdown.change(fn=controller.update_motion_module, inputs=[motion_module_dropdown], outputs=[motion_module_dropdown])
-                
-                motion_module_refresh_button = gr.Button(value="\U0001F503", elem_classes="toolbutton")
-                def update_motion_module():
-                    controller.refresh_motion_module()
-                    return gr.Dropdown.update(choices=controller.motion_module_list)
-                motion_module_refresh_button.click(fn=update_motion_module, inputs=[], outputs=[motion_module_dropdown])
-                
-                base_model_dropdown = gr.Dropdown(
-                    label="Select base Dreambooth model (required)",
-                    choices=controller.checkpoints_list,
-                    value=controller.checkpoints_list[0],
-                    interactive=True,
-                )
+            lora_dropdown_list.append(lora_model_dropdown)
+            lora_alpha_slider_list.append(lora_alpha_slider)
 
-                base_model_dropdown.change(fn=controller.update_base_model, inputs=[base_model_dropdown], outputs=[base_model_dropdown])
+    def update_lora_list():
+        controller.refresh_lora_models()
+        return [gr.Dropdown.update(choices=["none"] + controller.lora_list)]*max_LoRAs
 
-                
-                personalized_refresh_button = gr.Button(value="\U0001F503", elem_classes="toolbutton")
-                def update_personalized_model():
-                    controller.refresh_personalized_model()
-                    return [gr.Dropdown.update(choices=controller.checkpoints_list)]
-                personalized_refresh_button.click(fn=update_personalized_model, inputs=[], outputs=[base_model_dropdown])
+    lora_refresh_button.click(fn=update_lora_list, inputs=[], outputs=lora_dropdown_list)
 
-                # Load default models
-                controller.update_stable_diffusion(stable_diffusion_dropdown.value)
-                controller.update_motion_module(motion_module_dropdown.value)
-                controller.update_base_model(base_model_dropdown.value)
+    return lora_dropdown_list, lora_alpha_slider_list
+
+
+def generate_tab_ui():
+    
+        with gr.Accordion("1. Model checkpoints (select pretrained model path first", open=False):
+            stable_diffusion_dropdown, motion_module_dropdown, base_model_dropdown = base_model_selection_ui()
+            
 
         with gr.Column(variant="panel"):
             gr.Markdown(
@@ -381,7 +462,7 @@ def ui():
             with gr.Tab(label="Prompts"):
                 with gr.Row():
                     init_image_dropdown = gr.Dropdown(
-                    label="Select init image (NOT YET WORKING)",
+                    label="Select init image",
                     choices=["none"] + controller.init_image_list,
                     value="none",
                     interactive=True,
@@ -398,85 +479,29 @@ def ui():
                 negative_prompt_textbox = gr.Textbox(label="Negative prompt", lines=2, value="NSFW, lr, nsfw,(sketch, duplicate, ugly, huge eyes, text, logo, monochrome, worst face, (bad and mutated hands:1.3), (worst quality:2.0), (low quality:2.0), (blurry:2.0), horror, geometry, bad_prompt_v2, (bad hands), (missing fingers), multiple limbs, bad anatomy, (interlocked fingers:1.2), Ugly Fingers, (extra digit and hands and fingers and legs and arms:1.4), crown braid, ((2girl)), (deformed fingers:1.2), (long fingers:1.2),succubus wings,horn,succubus horn,succubus hairstyle, (bad-artist-anime), bad-artist, bad hand, grayscale, skin spots, acnes, skin blemishes")
                 
             with gr.Tab(label="LoRAs"):
-                lora_ui_rows = []
-                lora_dropdown_list = []
-                lora_alpha_slider_list = []
-
-                with gr.Row():
-                    gr.Markdown("Refresh Lora models")
-                    lora_refresh_button = gr.Button(value="\U0001F503", elem_classes="toolbutton")
-                
-                controller.refresh_lora_models()
-                for i in range(max_LoRAs):
-                    with gr.Row() as test:
-
-                        # Change to use gr.State() instead of gr.Textbox()
-                        lora_index = gr.Textbox(value=i, visible=False)
-
-                        if i < 2 and i < len(controller.lora_list):
-                            value = controller.lora_list[i]
-                        else:
-                            value = "none"
-
-                        lora_model_dropdown = gr.Dropdown(
-                                label=f"Select LoRA model {i} (optional)",
-                                choices=["none"] + controller.lora_list,
-                                value=value,
-                                interactive=True,
-                                elem_id=f"lora_model_dropdown-{i}",
-                            )
-                        
-                        
-                        lora_alpha_slider = gr.Slider(label="LoRA alpha", value=0.8, minimum=0, maximum=2, interactive=True)
-
-                        # def update_lora(lora_index, lora_model_dropdown, lora_alpha_slider):
-                        #     index = int(lora_index)
-                        #     if lora_model_dropdown == "none":
-                        #         lora_path = "none"
-                        #     else:
-                        #         lora_path = os.path.join(controller.loras_dir, lora_model_dropdown)
-                        #     controller.project.loras[index] = {
-                        #         "path": lora_path,
-                        #         "alpha": lora_alpha_slider
-                        #     }
-                        #     print(controller.project.loras)
-                        #     return
-
-                        # lora_model_dropdown.change(fn=update_lora, inputs=[lora_index, lora_model_dropdown, lora_alpha_slider])
-
-                        # lora_alpha_slider.change(fn=update_lora, inputs=[lora_index, lora_model_dropdown, lora_alpha_slider])
-
-                        lora_dropdown_list.append(lora_model_dropdown)
-                        lora_alpha_slider_list.append(lora_alpha_slider)
-
-                    lora_ui_rows.append(test)
-
-                # def update_number_of_LoRAs(number):
-                #     return [gr.Row.update(visible=True)]*number + [gr.Row.update(visible=False)]*(max_LoRAs-number)
-
-                # number_of_LoRAs.input(fn=update_number_of_LoRAs, inputs=number_of_LoRAs, outputs=lora_ui_rows)
-
-                def update_lora_list():
-                    controller.refresh_lora_models()
-                    return [gr.Dropdown.update(choices=["none"] + controller.lora_list)]*max_LoRAs
-
-                lora_refresh_button.click(fn=update_lora_list, inputs=[], outputs=lora_dropdown_list)
-
-               
+                lora_dropdown_list, lora_alpha_slider_list = lora_selection_ui()
+            
             with gr.Row().style(equal_height=False):
                 with gr.Column():
                     with gr.Row():
                         sampler_dropdown   = gr.Dropdown(label="Sampling method", choices=list(scheduler_dict.keys()), value=list(scheduler_dict.keys())[0])
                         sample_step_slider = gr.Slider(label="Sampling steps", value=25, minimum=10, maximum=100, step=1)
-                        
-                    width_slider     = gr.Slider(label="Width",            value=512, minimum=256, maximum=1024, step=64)
-                    height_slider    = gr.Slider(label="Height",           value=512, minimum=256, maximum=1024, step=64)
-                    length_slider    = gr.Slider(label="Animation length", value=16,  minimum=8,   maximum=100,   step=1)
-                    cfg_scale_slider = gr.Slider(label="CFG Scale",        value=7.5, minimum=0,   maximum=60)
-                    context_length  = gr.Slider(label="Context length",        value=20, minimum=10,   maximum=100, step=1)
-                    context_overlap = gr.Slider(label="Context overlap",        value=20, minimum=10,   maximum=100, step=1)
-                    context_stride = gr.Slider(label="Context stride",        value=0, minimum=0,   maximum=20, step=1)
-                    fp16 = gr.Checkbox(label="FP16", value=True)
+
+                    with gr.Row():
+                        width_slider     = gr.Slider(label="Width",            value=512, minimum=256, maximum=1024, step=64)
+                        height_slider    = gr.Slider(label="Height",           value=512, minimum=256, maximum=1024, step=64)
+
+                    with gr.Row():
+                        length_slider    = gr.Slider(label="Animation length", value=16,  minimum=8,   maximum=24,   step=1)
+                        cfg_scale_slider = gr.Slider(label="CFG Scale",        value=7.5, minimum=0,   maximum=20)
+                    
+                    with gr.Row():
+                        context_length  = gr.Slider(label="Context length",        value=20, minimum=10,   maximum=40, step=1)
+                        context_overlap = gr.Slider(label="Context overlap",        value=20, minimum=10,   maximum=40, step=1)
+
+                    with gr.Row():
+                        context_stride = gr.Slider(label="Context stride",        value=0, minimum=0,   maximum=20, step=1)
+                        fp16 = gr.Checkbox(label="FP16", value=True)
                     
                     with gr.Row():
                         seed_textbox = gr.Textbox(label="Seed", value=-1)
@@ -493,7 +518,6 @@ def ui():
                     stable_diffusion_dropdown,
                     motion_module_dropdown,
                     base_model_dropdown,
-                    lora_alpha_slider,
                     init_image_dropdown,
                     prompt_textbox, 
                     negative_prompt_textbox, 
@@ -512,7 +536,55 @@ def ui():
                 + lora_alpha_slider_list,
                 outputs=[result_video]
             )
-            
+
+def download_tab_ui():
+    with gr.Row() as checkpoint_row:
+        checkpoint_url = gr.Textbox(label="Checkpoint URL", scale=5)
+        checkpoint_download_button = gr.Button(value="Download checkpoint", variant='primary')
+
+    with gr.Row() as lora_row:
+        lora_url = gr.Textbox(label="LoRA URL", scale=5)
+        lora_download_button = gr.Button(value="Download LoRA", variant='primary')
+
+    checkpoint_download_button.click(fn=download_checkpoint, inputs=[checkpoint_url], outputs=[checkpoint_url])
+    lora_download_button.click(fn=download_loras, inputs=[lora_url], outputs=[lora_url])
+
+def configuration_tab_ui():
+    gr.Markdown(
+        """
+        # WIP
+        """
+    )
+
+def credits_tab_ui():
+    gr.Markdown(
+        """
+        # [AnimateDiff: Animate Your Personalized Text-to-Image Diffusion Models without Specific Tuning](https://arxiv.org/abs/2307.04725)
+        Yuwei Guo, Ceyuan Yang*, Anyi Rao, Yaohui Wang, Yu Qiao, Dahua Lin, Bo Dai (*Corresponding Author)<br>
+        [Arxiv Report](https://arxiv.org/abs/2307.04725) | [Project Page](https://animatediff.github.io/) | [Github](https://github.com/guoyww/animatediff/)
+        """
+    )
+
+def ui():
+    with gr.Blocks(css=css) as demo:
+        gr.Markdown(
+            """
+            # AnimateDiff Web UI
+            """
+        )
+
+        with gr.Tab(label="Generate"):
+            generate_tab_ui()
+
+        with gr.Tab(label="Download"):
+            download_tab_ui()
+
+        with gr.Tab(label="Configurations"):
+            configuration_tab_ui()
+
+        with gr.Tab(label="Credits"):
+            credits_tab_ui()
+
     return demo
 
 
