@@ -409,9 +409,9 @@ def base_model_selection_ui():
         checkpoint_refresh_button.click(fn=update_checkpoints_list, inputs=[], outputs=[checkpoint_dropdown])
 
         # Load default models
-        # controller.update_stable_diffusion(stable_diffusion_dropdown.value)
-        # controller.update_motion_module(motion_module_dropdown.value)
-        # controller.update_base_model(base_model_dropdown.value)
+        controller.update_stable_diffusion(stable_diffusion_dropdown.value)
+        controller.update_motion_module(motion_module_dropdown.value)
+        controller.update_base_model(checkpoint_dropdown.value)
 
         return stable_diffusion_dropdown, motion_module_dropdown, checkpoint_dropdown
 
@@ -425,10 +425,15 @@ def lora_selection_ui():
     
     for i in range(max_LoRAs):
         with gr.Row():
+            if i < 2 and i < len(controller.lora_list):
+                value = controller.lora_list[i]
+            else:
+                value = "none"
+
             lora_model_dropdown = gr.Dropdown(
                     label=f"Select LoRA model {i} (optional)",
                     choices=["none"] + controller.lora_list,
-                    value="none",
+                    value=value,
                     interactive=True,
                     elem_id=f"lora_model_dropdown-{i}",
                 )
