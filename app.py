@@ -140,7 +140,7 @@ class AnimateController:
         
         self.refresh_stable_diffusion()
         self.refresh_motion_module()
-        self.refresh_personalized_model()
+        self.refresh_checkpoints()
         
         # config models
         self.tokenizer             = None
@@ -155,20 +155,21 @@ class AnimateController:
     def refresh_stable_diffusion(self):
         self.stable_diffusion_list = glob(os.path.join(self.stable_diffusion_dir, "*/"))
 
-    def refresh_init_images(self):
-        self.init_image_list = glob(os.path.join(self.init_images_dir, "*"))
 
     def refresh_motion_module(self):
         motion_module_list = glob(os.path.join(self.motion_module_dir, "*.ckpt"))
         self.motion_module_list = [os.path.basename(p) for p in motion_module_list]
 
-    def refresh_personalized_model(self):
-        personalized_model_list = glob(os.path.join(self.checkpoints_dir, "*.safetensors"))
-        self.checkpoints_list = [os.path.basename(p) for p in personalized_model_list]
+    def refresh_checkpoints(self):
+        checkpoint_list = glob(os.path.join(self.checkpoints_dir, "*.safetensors"))
+        self.checkpoints_list = [os.path.basename(p) for p in checkpoint_list]
 
     def refresh_lora_models(self):
         lora_list = glob(os.path.join(self.loras_dir, "*.safetensors"))
         self.lora_list = [os.path.basename(p) for p in lora_list]
+
+    def refresh_init_images(self):
+        self.init_image_list = glob(os.path.join(self.init_images_dir, "*"))
 
     def update_stable_diffusion(self, stable_diffusion_dropdown):
         self.tokenizer = CLIPTokenizer.from_pretrained(stable_diffusion_dropdown, subfolder="tokenizer")
@@ -390,28 +391,28 @@ def base_model_selection_ui():
             return gr.Dropdown.update(choices=controller.motion_module_list)
         motion_module_refresh_button.click(fn=update_motion_module, inputs=[], outputs=[motion_module_dropdown])
         
-        base_model_dropdown = gr.Dropdown(
+        checkpoint_dropdown = gr.Dropdown(
             label="Select base Dreambooth model (required)",
             choices=controller.checkpoints_list,
             value=controller.checkpoints_list[0],
             interactive=True,
         )
 
-        base_model_dropdown.change(fn=controller.update_base_model, inputs=[base_model_dropdown], outputs=[base_model_dropdown])
+        checkpoint_dropdown.change(fn=controller.update_base_model, inputs=[checkpoint_dropdown], outputs=[checkpoint_dropdown])
 
         
-        personalized_refresh_button = gr.Button(value="\U0001F503", elem_classes="toolbutton")
-        def update_personalized_model():
-            controller.refresh_personalized_model()
+        checkpoint_refresh_button = gr.Button(value="\U0001F503", elem_classes="toolbutton")
+        def update_checkpoints():
+            controller.refresh_checkpoints()
             return [gr.Dropdown.update(choices=controller.checkpoints_list)]
-        personalized_refresh_button.click(fn=update_personalized_model, inputs=[], outputs=[base_model_dropdown])
+        checkpoint_refresh_button.click(fn=update_checkpoints, inputs=[], outputs=[checkpoint_dropdown])
 
         # Load default models
         # controller.update_stable_diffusion(stable_diffusion_dropdown.value)
         # controller.update_motion_module(motion_module_dropdown.value)
         # controller.update_base_model(base_model_dropdown.value)
 
-        return stable_diffusion_dropdown, motion_module_dropdown, base_model_dropdown
+        return stable_diffusion_dropdown, motion_module_dropdown, checkpoint_dropdown
 
 def lora_selection_ui():
     lora_dropdown_list = []
@@ -449,7 +450,7 @@ def lora_selection_ui():
 def generate_tab_ui():
     
         with gr.Accordion("1. Model checkpoints (select pretrained model path first", open=False):
-            stable_diffusion_dropdown, motion_module_dropdown, base_model_dropdown = base_model_selection_ui()
+            stable_diffusion_dropdown, motion_module_dropdown, checkpoint_dropdown = base_model_selection_ui()
             
 
         with gr.Column(variant="panel"):
@@ -517,7 +518,7 @@ def generate_tab_ui():
                 inputs=[
                     stable_diffusion_dropdown,
                     motion_module_dropdown,
-                    base_model_dropdown,
+                    checkpoint_dropdown,
                     init_image_dropdown,
                     prompt_textbox, 
                     negative_prompt_textbox, 
