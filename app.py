@@ -191,15 +191,15 @@ class AnimateController:
             assert len(unexpected) == 0
             return gr.Dropdown.update()
 
-    def update_base_model(self, base_model_dropdown):
+    def update_base_model(self, checkpoint_dropdown):
         if self.unet is None:
             gr.Info(f"Please select a pretrained model path.")
             return gr.Dropdown.update(value=None)
         else:
-            print(base_model_dropdown)
-            base_model_dropdown = os.path.join(self.checkpoints_dir, base_model_dropdown)
+            print(checkpoint_dropdown)
+            checkpoint_dropdown = os.path.join(self.checkpoints_dir, checkpoint_dropdown)
             base_model_state_dict = {}
-            with safe_open(base_model_dropdown, framework="pt", device="cpu") as f:
+            with safe_open(checkpoint_dropdown, framework="pt", device="cpu") as f:
                 for key in f.keys():
                     base_model_state_dict[key] = f.get_tensor(key)
                     
@@ -243,7 +243,7 @@ class AnimateController:
         self,
         stable_diffusion_dropdown,
         motion_module_dropdown,
-        base_model_dropdown,
+        checkpoint_dropdown,
         init_image,
         prompt_textbox, 
         negative_prompt_textbox, 
@@ -274,7 +274,7 @@ class AnimateController:
             raise gr.Error(f"Please select a pretrained model path.")
         if motion_module_dropdown == "": 
             raise gr.Error(f"Please select a motion module.")
-        if base_model_dropdown == "":
+        if checkpoint_dropdown == "":
             raise gr.Error(f"Please select a base DreamBooth model.")
 
         if is_xformers_available(): self.unet.enable_xformers_memory_efficient_attention()
@@ -334,7 +334,7 @@ class AnimateController:
         sample_config = {
             "stable_diffusion": stable_diffusion_dropdown,
             "motion_model": motion_module_dropdown,
-            "base_checkpoint": base_model_dropdown,
+            "base_checkpoint": checkpoint_dropdown,
             "prompt": prompt_textbox,
             "n_prompt": negative_prompt_textbox,
             "sampler": sampler_dropdown,
