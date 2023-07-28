@@ -423,6 +423,7 @@ def lora_selection_ui():
         gr.Markdown("Refresh Lora models")
         lora_refresh_button = gr.Button(value="\U0001F503", elem_classes="toolbutton")
     
+    controller.refresh_lora_models()
     for i in range(max_LoRAs):
         with gr.Row():
             if i < 2 and i < len(controller.lora_list):
@@ -469,7 +470,7 @@ def generate_tab_ui():
             with gr.Tab(label="Prompts"):
                 with gr.Row():
                     init_image_dropdown = gr.Dropdown(
-                    label="Select init image",
+                    label="Select init image (NOT YET WORKING)",
                     choices=["none"] + controller.init_image_list,
                     value="none",
                     interactive=True,
