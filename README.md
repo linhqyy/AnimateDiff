@@ -1,4 +1,5 @@
 # AnimateDiff
+![Preview UI](__assets__\figs\gradio2.png)
 
 This a fork of the official repo. Made specifically to run in Colab with gradio UI. Local requires 12GB VRAM
 
@@ -9,8 +10,9 @@ This a fork of the official repo. Made specifically to run in Colab with gradio 
 ## Features
 - Loading of multiple LoRAs (Without degrading the network with each generation)
 - Longer videos via moving context window (Credit to https://github.com/dajes/AnimateDiff/tree/longer_videos)
+- 100% inference speed due to fp16 (Credit to https://github.com/dajes/AnimateDiff/tree/longer_videos)
 
-## ToDo
+## Todo
 - Random seed doesn't seem to be working properly
 - Load models after UI load
 - Init image
@@ -18,6 +20,46 @@ This a fork of the official repo. Made specifically to run in Colab with gradio 
 - Download models via UI
 - Load/Save from configs
 - Implement rife-ncnn-vulkan (Idea from https://github.com/neggles/animatediff-cli)
+
+
+## Output from default parameters for testing
+![Example out](__assets__\animations\example.gif)
+
+```
+{
+    "stable_diffusion": "/content/AnimateDiff/models/StableDiffusion/stable-diffusion-v1-5/",
+    "motion_model": "mm_sd_v14.ckpt",
+    "base_checkpoint": "AnythingV5Ink_v5PrtRE.safetensors",
+    "prompt": "1girl, yoimiya (genshin impact), origen, line, comet, wink, Masterpiece \uff0cBestQuality \uff0cUltraDetailed",
+    "n_prompt": "NSFW, lr, nsfw,(sketch, duplicate, ugly, huge eyes, text, logo, monochrome, worst face, (bad and mutated hands:1.3), (worst quality:2.0), (low quality:2.0), (blurry:2.0), horror, geometry, bad_prompt_v2, (bad hands), (missing fingers), multiple limbs, bad anatomy, (interlocked fingers:1.2), Ugly Fingers, (extra digit and hands and fingers and legs and arms:1.4), crown braid, ((2girl)), (deformed fingers:1.2), (long fingers:1.2),succubus wings,horn,succubus horn,succubus hairstyle, (bad-artist-anime), bad-artist, bad hand, grayscale, skin spots, acnes, skin blemishes",
+    "sampler": "Euler",
+    "num_inference_steps": 25,
+    "guidance_scale": 7.5,
+    "width": 512,
+    "height": 512,
+    "video_length": 16,
+    "seed": 86529444,
+    "temporal_context": 20,
+    "strides": 0,
+    "overlap": 20,
+    "fp16": true,
+    "lora_list": [
+        {
+            "path": "/content/AnimateDiff/models/loras/yomiya.safetensors",
+            "alpha": 0.8
+        },
+        {
+            "path": "/content/AnimateDiff/models/loras/LineLine2D.safetensors",
+            "alpha": 0.8
+        }
+    ]
+}
+
+
+```
+
+
+
 
 ## From original readme
 
