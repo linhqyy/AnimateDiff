@@ -31,9 +31,9 @@ import re
 sample_idx     = 0
 max_LoRAs      = 5
 scheduler_dict = {
+    "PNDM": PNDMScheduler, # Works with Init image. Could be better than DDIM?
+    "DDIM": DDIMScheduler, # Works with Init image. Faster
     "Euler": EulerDiscreteScheduler, # Doesn't work with Init image
-    "PNDM": PNDMScheduler, # Works with Init image
-    "DDIM": DDIMScheduler,
 }
 
 css = """
