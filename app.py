@@ -467,7 +467,7 @@ def generate_tab_ui():
                 with gr.Row():
                     init_image_dropdown = gr.Dropdown(
                     label="Select init image",
-                    info="Does not work with Euler sampling. Will default to DDIM if Euler was selected. PNDMScheduler is slower but could be better than DDIM. I'm not sure. Let me know if you find out."
+                    info="Does not work with Euler sampling. Will default to DDIM if Euler was selected. PNDMScheduler is slower but could be better than DDIM. I'm not sure. Let me know if you find out.",
                     choices=["none"] + controller.init_image_list,
                     value=controller.init_image_list[0],
                     interactive=True,

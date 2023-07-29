@@ -11,6 +11,7 @@ This a fork of the official repo. Made specifically to run in Colab with gradio 
 - Loading of multiple LoRAs (Without degrading the network with each generation)
 - Longer videos via moving context window (Credit to https://github.com/dajes/AnimateDiff/tree/longer_videos)
 - 100% inference speed due to fp16 (Credit to https://github.com/dajes/AnimateDiff/tree/longer_videos)
+- `29/07/2023` Init image. Euler sampler is disabled when using
 
 ## Todo
 - ~~Random seed doesn't seem to be working properly~~
