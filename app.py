@@ -492,21 +492,27 @@ def generate_tab_ui():
                         sample_step_slider = gr.Slider(label="Sampling steps", value=25, minimum=10, maximum=100, step=1)
 
                     with gr.Row():
-                        width_slider     = gr.Slider(label="Width",            value=512, minimum=256, maximum=1024, step=64)
-                        height_slider    = gr.Slider(label="Height",           value=512, minimum=256, maximum=1024, step=64)
+                        width_slider     = gr.Slider(label="Width", value=512, minimum=256, maximum=1024, step=64)
+                        height_slider    = gr.Slider(label="Height", value=512, minimum=256, maximum=1024, step=64)
 
                     with gr.Row():
                         length_slider    = gr.Slider(label="Animation length", value=16,  minimum=8,   maximum=24,   step=1)
-                        cfg_scale_slider = gr.Slider(label="CFG Scale",        value=7.5, minimum=0,   maximum=20)
+                        cfg_scale_slider = gr.Slider(label="CFG Scale", value=7.5, minimum=0,   maximum=20)
                     
                     with gr.Row():
-                        context_length  = gr.Slider(label="Context length",        value=20, minimum=10,   maximum=40, step=1)
-                        context_overlap = gr.Slider(label="Context overlap",        value=20, minimum=10,   maximum=40, step=1)
+                        context_length  = gr.Slider(label="Context length", value=20, minimum=10,   maximum=40, step=1, info="Condition: [Context length] * [Context stride] - [Context overlap] > 0. If not you'll get an error. Will simplify this eventually.")
+                        context_overlap = gr.Slider(label="Context overlap", value=20, minimum=10,   maximum=40, step=1)
 
                     with gr.Row():
-                        context_stride = gr.Slider(label="Context stride",        value=1, minimum=1,   maximum=20, step=1)
+                        context_stride = gr.Slider(label="Context stride", value=1, minimum=1,   maximum=20, step=1)
                         fp16 = gr.Checkbox(label="FP16", value=True)
                     
+                    def update_context_overlap(context_length, context_stride):
+                        maximum = context_length * context_stride - 1
+                        return gr.Slider.update(minimum=1, maximum=maximum)
+                    
+                    context_length.change(fn=update_context_overlap, inputs=[context_length, context_overlap], outputs=[context_stride])
+
                     with gr.Row():
                         seed_textbox = gr.Textbox(label="Seed", value=-1)
                         seed_button  = gr.Button(value="\U0001F3B2", elem_classes="toolbutton")

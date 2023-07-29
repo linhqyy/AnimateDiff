@@ -12,10 +12,6 @@ def uniform(step, steps, n, context_size, strides, overlap, closed_loop=True):
     strides = min(strides, int(np.ceil(np.log2(n / context_size))) + 1)
     for stride in 1 << np.arange(strides):
         pad = int(round(n * ordered_halving(step)))
-        print(context_size)
-        print(stride)
-        print(overlap)
-        print(context_size * stride - overlap)
         for j in range(
                 int(ordered_halving(step) * stride) + pad,
                 n + pad + (0 if closed_loop else -overlap),

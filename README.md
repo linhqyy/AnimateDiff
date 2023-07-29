@@ -8,13 +8,13 @@ This a fork of the official repo. Made specifically to run in Colab with gradio 
 (Original colab by [@camenduru](https://github.com/camenduru))
 
 ## Features
-- Loading of multiple LoRAs (Without degrading the network with each generation)
-- Longer videos via moving context window (Credit to https://github.com/dajes/AnimateDiff/tree/longer_videos)
-- 100% inference speed due to fp16 (Credit to https://github.com/dajes/AnimateDiff/tree/longer_videos)
+- `28/07/2023` Loading of multiple LoRAs (Without degrading the network with each generation)
+- `28/07/2023` 100% inference speed due to fp16 (Credit to https://github.com/dajes/AnimateDiff/tree/longer_videos)
 - `28/07/2023` Download models via UI
 - `29/07/2023` Init image. Euler sampler is disabled when using init images. (Original implementation by https://github.com/talesofai/AnimateDiff)
 
 ## Todo
+- Longer videos via moving context window (Credit to https://github.com/dajes/AnimateDiff/tree/longer_videos)
 - Implement rife-ncnn-vulkan (Idea from https://github.com/neggles/animatediff-cli)
 - Load/Save from configs
 - Configs tab
