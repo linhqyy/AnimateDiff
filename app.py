@@ -16,6 +16,7 @@ from diffusers.utils.import_utils import is_xformers_available
 from transformers import CLIPTextModel, CLIPTokenizer
 
 from animatediff.models.unet import UNet3DConditionModel
+# from animatediff.pipelines.pipeline_animation import AnimationPipeline
 from animatediff.pipelines.pipeline_animation_init_images import AnimationPipeline
 from animatediff.utils.util import save_videos_grid
 from animatediff.utils.convert_from_ckpt import convert_ldm_unet_checkpoint, convert_ldm_clip_checkpoint, convert_ldm_vae_checkpoint
@@ -30,8 +31,8 @@ import re
 sample_idx     = 0
 max_LoRAs      = 5
 scheduler_dict = {
-    "Euler": EulerDiscreteScheduler,
-    "PNDM": PNDMScheduler,
+    "Euler": EulerDiscreteScheduler, # Doesn't work with Init image
+    "PNDM": PNDMScheduler, # Works with Init image
     "DDIM": DDIMScheduler,
 }
 

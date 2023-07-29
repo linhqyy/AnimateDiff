@@ -210,7 +210,7 @@ class AnimationPipeline(DiffusionPipeline):
         batch_size = len(prompt) if isinstance(prompt, list) else 1
 
         # TEST FIX INIT_IMAGES
-        # self.update_embeddings()
+        self.update_embeddings()
         text_inputs = self.tokenizer(
             prompt,
             padding="max_length",
@@ -234,7 +234,7 @@ class AnimationPipeline(DiffusionPipeline):
             attention_mask = None
 
         # TEST FIX INIT_IMAGES
-        # text_input_ids, attention_mask = self.insert_inversions(text_input_ids, attention_mask)
+        text_input_ids, attention_mask = self.insert_inversions(text_input_ids, attention_mask)
         text_embeddings = self.text_encoder(
             text_input_ids.to(device),
             attention_mask=attention_mask,
@@ -283,7 +283,7 @@ class AnimationPipeline(DiffusionPipeline):
         
             uncond_input_ids = uncond_input.input_ids
             # TEST FIX INIT_IMAGES
-            # uncond_input_ids, attention_mask = self.insert_inversions(uncond_input_ids, attention_mask)
+            uncond_input_ids, attention_mask = self.insert_inversions(uncond_input_ids, attention_mask)
             uncond_embeddings = self.text_encoder(
                 uncond_input_ids.to(device),
                 attention_mask=attention_mask,
@@ -311,8 +311,8 @@ class AnimationPipeline(DiffusionPipeline):
         device = self._execution_device
         for frame_idx in tqdm(range(latents.shape[0])):
             # TEST FIX INIT_IMAGES
-            # video.append(self.vae.decode(latents[frame_idx:frame_idx+1].to(device)).sample) # CHECK HERE 
-            video.append(self.vae.decode(latents[frame_idx:frame_idx+1]).sample)
+            video.append(self.vae.decode(latents[frame_idx:frame_idx+1].to(device)).sample) # CHECK HERE 
+            # video.append(self.vae.decode(latents[frame_idx:frame_idx+1]).sample)
         video = torch.cat(video)
         video = rearrange(video, "(b f) c h w -> b c f h w", f=video_length)
         video = (video / 2 + 0.5).clamp(0, 1)

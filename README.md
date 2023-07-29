@@ -20,6 +20,9 @@ This a fork of the official repo. Made specifically to run in Colab with gradio 
 - Load/Save from configs
 - Implement rife-ncnn-vulkan (Idea from https://github.com/neggles/animatediff-cli)
 
+## Why not build this as an A1111 extension?
+- There's already an A1111 Extension at https://github.com/continue-revolution/sd-webui-animatediff
+- Some features are easier to implement by building this seperately. It will allow us to explore different techniques to improve AnimateDiff.
 
 ## Output from default parameters for testing
 ![Example out](__assets__/animations/example.gif)
