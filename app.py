@@ -16,8 +16,7 @@ from diffusers.utils.import_utils import is_xformers_available
 from transformers import CLIPTextModel, CLIPTokenizer
 
 from animatediff.models.unet import UNet3DConditionModel
-# from animatediff.pipelines.pipeline_animation import AnimationPipeline
-from animatediff.pipelines.pipeline_animation_init_images import AnimationPipeline
+from animatediff.pipelines.pipeline_animation import AnimationPipeline
 from animatediff.utils.util import save_videos_grid
 from animatediff.utils.convert_from_ckpt import convert_ldm_unet_checkpoint, convert_ldm_clip_checkpoint, convert_ldm_vae_checkpoint
 from animatediff.utils.convert_lora_safetensor_to_diffusers import convert_lora
@@ -278,7 +277,6 @@ class AnimateController:
 
         if is_xformers_available(): self.unet.enable_xformers_memory_efficient_attention()
 
-
         pipeline = AnimationPipeline(
             vae=self.vae, text_encoder=self.text_encoder, tokenizer=self.tokenizer, unet=self.unet,
             scheduler=scheduler_dict[sampler_dropdown](**OmegaConf.to_container(self.inference_config.noise_scheduler_kwargs))
@@ -468,17 +466,18 @@ def generate_tab_ui():
             with gr.Tab(label="Prompts"):
                 with gr.Row():
                     init_image_dropdown = gr.Dropdown(
-                    label="Select init image (NOT YET WORKING)",
+                    label="Select init image",
+                    info="Does not work with Euler sampling. Will default to DDIM if Euler was selected. PNDMScheduler is slower but could be better than DDIM. I'm not sure. Let me know if you find out."
                     choices=["none"] + controller.init_image_list,
                     value=controller.init_image_list[0],
                     interactive=True,
                 )
 
                     init_image_refresh_button = gr.Button(value="\U0001F503", elem_classes="toolbutton")
-                    def update_init_image():
+                    def update_init_image_list():
                         controller.refresh_init_images()
                         return gr.Dropdown.update(choices=["none"] + controller.init_image_list)
-                    init_image_refresh_button.click(fn=update_init_image, inputs=[], outputs=[init_image_dropdown])
+                    init_image_refresh_button.click(fn=update_init_image_list, inputs=[], outputs=[init_image_dropdown])
 
                 prompt_textbox = gr.Textbox(label="Prompt", lines=2, value="1girl, yoimiya (genshin impact), origen, line, comet, wink, Masterpiece ，BestQuality ，UltraDetailed")
                 negative_prompt_textbox = gr.Textbox(label="Negative prompt", lines=2, value="NSFW, lr, nsfw,(sketch, duplicate, ugly, huge eyes, text, logo, monochrome, worst face, (bad and mutated hands:1.3), (worst quality:2.0), (low quality:2.0), (blurry:2.0), horror, geometry, bad_prompt_v2, (bad hands), (missing fingers), multiple limbs, bad anatomy, (interlocked fingers:1.2), Ugly Fingers, (extra digit and hands and fingers and legs and arms:1.4), crown braid, ((2girl)), (deformed fingers:1.2), (long fingers:1.2),succubus wings,horn,succubus horn,succubus hairstyle, (bad-artist-anime), bad-artist, bad hand, grayscale, skin spots, acnes, skin blemishes")
@@ -516,6 +515,17 @@ def generate_tab_ui():
                     generate_button = gr.Button(value="Generate", variant='primary')
                     
                 result_video = gr.Video(label="Generated Animation", interactive=False)
+
+            def update_init_image_dropdown(init_image_dropdown, sampler_dropdown):
+                if init_image_dropdown == "none":
+                    sampler_choices = list(scheduler_dict.keys())
+                    sampler_choices.remove(EulerDiscreteScheduler)
+
+                if sampler_dropdown == EulerDiscreteScheduler:
+                    sampler_value = DDIMScheduler                
+                return gr.Dropdown.update(choices=list(scheduler_dict.keys()), value=sampler_value)
+
+            init_image_dropdown.change(fn=update_init_image_dropdown, inputs=[init_image_dropdown, sampler_dropdown], outputs=[sampler_dropdown])
 
             generate_button.click(
                 fn=controller.animate,
