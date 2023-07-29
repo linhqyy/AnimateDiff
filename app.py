@@ -496,12 +496,12 @@ def generate_tab_ui():
                         height_slider    = gr.Slider(label="Height", value=512, minimum=256, maximum=1024, step=64)
 
                     with gr.Row():
-                        length_slider    = gr.Slider(label="Animation length", value=16,  minimum=8,   maximum=24,   step=1)
+                        length_slider    = gr.Slider(label="Animation length", value=16,  minimum=8,   maximum=40,   step=1)
                         cfg_scale_slider = gr.Slider(label="CFG Scale", value=7.5, minimum=0,   maximum=20)
                     
                     with gr.Row():
-                        context_length  = gr.Slider(label="Context length", value=20, minimum=10,   maximum=40, step=1, info="Condition: [Context length] * [Context stride] - [Context overlap] > 0. If not you'll get an error. Will simplify this eventually.")
-                        context_overlap = gr.Slider(label="Context overlap", value=20, minimum=10,   maximum=40, step=1)
+                        context_length  = gr.Slider(label="Context length", value=20, minimum=5,   maximum=40, step=1, info="Condition: [Context length] * [Context stride] - [Context overlap] > 0. If not you'll get an error. Will simplify this eventually.")
+                        context_overlap = gr.Slider(label="Context overlap", value=20, minimum=5,   maximum=40, step=1)
 
                     with gr.Row():
                         context_stride = gr.Slider(label="Context stride", value=1, minimum=1,   maximum=20, step=1)
