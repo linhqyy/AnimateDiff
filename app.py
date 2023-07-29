@@ -104,7 +104,7 @@ class ProjectConfigs:
         self.seed = -1
         self.temporal_context = 20
         self.overlap = 20
-        self.strides = 0
+        self.strides = 1
         self.fp16 = True
         self.loras = [{'path' : 'none', 'alpha': 0.8}]*5
 
@@ -504,7 +504,7 @@ def generate_tab_ui():
                         context_overlap = gr.Slider(label="Context overlap",        value=20, minimum=10,   maximum=40, step=1)
 
                     with gr.Row():
-                        context_stride = gr.Slider(label="Context stride",        value=0, minimum=0,   maximum=20, step=1)
+                        context_stride = gr.Slider(label="Context stride",        value=1, minimum=1,   maximum=20, step=1)
                         fp16 = gr.Checkbox(label="FP16", value=True)
                     
                     with gr.Row():
@@ -517,7 +517,6 @@ def generate_tab_ui():
                 result_video = gr.Video(label="Generated Animation", interactive=False)
 
             def update_init_image_dropdown(init_image_dropdown, sampler_dropdown):
-                print(sampler_dropdown)
                 sampler_choices = list(scheduler_dict.keys())
                 if init_image_dropdown != "none":
                     sampler_choices.remove("Euler")
