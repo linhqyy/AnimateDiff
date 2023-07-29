@@ -30,9 +30,9 @@ import re
 sample_idx     = 0
 max_LoRAs      = 5
 scheduler_dict = {
-    "Euler": EulerDiscreteScheduler,
-    "PNDM": PNDMScheduler,
-    "DDIM": DDIMScheduler,
+    "PNDM": PNDMScheduler, # Works with Init image. Could be better than DDIM?
+    "DDIM": DDIMScheduler, # Works with Init image. Faster
+    "Euler": EulerDiscreteScheduler, # Doesn't work with Init image
 }
 
 css = """
@@ -104,7 +104,7 @@ class ProjectConfigs:
         self.seed = -1
         self.temporal_context = 20
         self.overlap = 20
-        self.strides = 0
+        self.strides = 1
         self.fp16 = True
         self.loras = [{'path' : 'none', 'alpha': 0.8}]*5
 
@@ -157,7 +157,6 @@ class AnimateController:
     def refresh_stable_diffusion(self):
         self.stable_diffusion_list = glob(os.path.join(self.stable_diffusion_dir, "*/"))
 
-
     def refresh_motion_module(self):
         motion_module_list = glob(os.path.join(self.motion_module_dir, "*.ckpt"))
         self.motion_module_list = [os.path.basename(p) for p in motion_module_list]
@@ -191,15 +190,14 @@ class AnimateController:
             assert len(unexpected) == 0
             return gr.Dropdown.update()
 
-    def update_base_model(self, base_model_dropdown):
+    def update_base_model(self, checkpoint_dropdown):
         if self.unet is None:
             gr.Info(f"Please select a pretrained model path.")
             return gr.Dropdown.update(value=None)
         else:
-            print(base_model_dropdown)
-            base_model_dropdown = os.path.join(self.checkpoints_dir, base_model_dropdown)
+            checkpoint_dropdown = os.path.join(self.checkpoints_dir, checkpoint_dropdown)
             base_model_state_dict = {}
-            with safe_open(base_model_dropdown, framework="pt", device="cpu") as f:
+            with safe_open(checkpoint_dropdown, framework="pt", device="cpu") as f:
                 for key in f.keys():
                     base_model_state_dict[key] = f.get_tensor(key)
                     
@@ -243,7 +241,7 @@ class AnimateController:
         self,
         stable_diffusion_dropdown,
         motion_module_dropdown,
-        base_model_dropdown,
+        checkpoint_dropdown,
         init_image,
         prompt_textbox, 
         negative_prompt_textbox, 
@@ -274,11 +272,10 @@ class AnimateController:
             raise gr.Error(f"Please select a pretrained model path.")
         if motion_module_dropdown == "": 
             raise gr.Error(f"Please select a motion module.")
-        if base_model_dropdown == "":
+        if checkpoint_dropdown == "":
             raise gr.Error(f"Please select a base DreamBooth model.")
 
         if is_xformers_available(): self.unet.enable_xformers_memory_efficient_attention()
-
 
         pipeline = AnimationPipeline(
             vae=self.vae, text_encoder=self.text_encoder, tokenizer=self.tokenizer, unet=self.unet,
@@ -334,7 +331,7 @@ class AnimateController:
         sample_config = {
             "stable_diffusion": stable_diffusion_dropdown,
             "motion_model": motion_module_dropdown,
-            "base_checkpoint": base_model_dropdown,
+            "base_checkpoint": checkpoint_dropdown,
             "prompt": prompt_textbox,
             "n_prompt": negative_prompt_textbox,
             "sampler": sampler_dropdown,
@@ -369,7 +366,7 @@ def base_model_selection_ui():
             interactive=True,
             value=controller.stable_diffusion_list[0]
         )
-        stable_diffusion_dropdown.change(fn=controller.update_stable_diffusion, inputs=[stable_diffusion_dropdown], outputs=[stable_diffusion_dropdown])
+        stable_diffusion_dropdown.change(fn=controller.update_stable_diffusion, inputs=[stable_diffusion_dropdown])
         
         stable_diffusion_refresh_button = gr.Button(value="\U0001F503", elem_classes="toolbutton")
         def update_stable_diffusion_list():
@@ -384,7 +381,7 @@ def base_model_selection_ui():
             interactive=True,
             value=controller.motion_module_list[0]
         )
-        motion_module_dropdown.change(fn=controller.update_motion_module, inputs=[motion_module_dropdown], outputs=[motion_module_dropdown])
+        motion_module_dropdown.change(fn=controller.update_motion_module, inputs=[motion_module_dropdown])
         
         motion_module_refresh_button = gr.Button(value="\U0001F503", elem_classes="toolbutton")
         def update_motion_module_list():
@@ -396,16 +393,16 @@ def base_model_selection_ui():
         checkpoint_dropdown = gr.Dropdown(
             label="Select base Dreambooth model (required)",
             choices=controller.checkpoints_list,
-            value=controller.checkpoints_list[0],
             interactive=True,
+            value=controller.checkpoints_list[0],
         )
 
-        checkpoint_dropdown.change(fn=controller.update_base_model, inputs=[checkpoint_dropdown], outputs=[checkpoint_dropdown])
+        checkpoint_dropdown.change(fn=controller.update_base_model, inputs=[checkpoint_dropdown])
         
         checkpoint_refresh_button = gr.Button(value="\U0001F503", elem_classes="toolbutton")
         def update_checkpoints_list():
             controller.refresh_checkpoints()
-            return [gr.Dropdown.update(choices=controller.checkpoints_list)]
+            return gr.Dropdown.update(choices=controller.checkpoints_list)
         checkpoint_refresh_button.click(fn=update_checkpoints_list, inputs=[], outputs=[checkpoint_dropdown])
 
         # Load default models
@@ -469,19 +466,19 @@ def generate_tab_ui():
             with gr.Tab(label="Prompts"):
                 with gr.Row():
                     init_image_dropdown = gr.Dropdown(
-                    label="Select init image (NOT YET WORKING)",
+                    label="Select init image",
+                    info="Does not work with Euler sampling. Will default to DDIM if Euler was selected. PNDMScheduler is slower but could be better than DDIM. I'm not sure. Let me know if you find out.",
                     choices=["none"] + controller.init_image_list,
-                    value="none",
+                    value=controller.init_image_list[0],
                     interactive=True,
                 )
 
                     init_image_refresh_button = gr.Button(value="\U0001F503", elem_classes="toolbutton")
-                    def update_init_image():
+                    def update_init_image_list():
                         controller.refresh_init_images()
                         return gr.Dropdown.update(choices=["none"] + controller.init_image_list)
-                    init_image_refresh_button.click(fn=update_init_image, inputs=[], outputs=[init_image_dropdown])
+                    init_image_refresh_button.click(fn=update_init_image_list, inputs=[], outputs=[init_image_dropdown])
 
-                # init_image = gr.Textbox(label="Init image", value="/content/AnimateDiff/configs/prompts/yoimiya-init.jpg")
                 prompt_textbox = gr.Textbox(label="Prompt", lines=2, value="1girl, yoimiya (genshin impact), origen, line, comet, wink, Masterpiece ，BestQuality ，UltraDetailed")
                 negative_prompt_textbox = gr.Textbox(label="Negative prompt", lines=2, value="NSFW, lr, nsfw,(sketch, duplicate, ugly, huge eyes, text, logo, monochrome, worst face, (bad and mutated hands:1.3), (worst quality:2.0), (low quality:2.0), (blurry:2.0), horror, geometry, bad_prompt_v2, (bad hands), (missing fingers), multiple limbs, bad anatomy, (interlocked fingers:1.2), Ugly Fingers, (extra digit and hands and fingers and legs and arms:1.4), crown braid, ((2girl)), (deformed fingers:1.2), (long fingers:1.2),succubus wings,horn,succubus horn,succubus hairstyle, (bad-artist-anime), bad-artist, bad hand, grayscale, skin spots, acnes, skin blemishes")
                 
@@ -495,21 +492,27 @@ def generate_tab_ui():
                         sample_step_slider = gr.Slider(label="Sampling steps", value=25, minimum=10, maximum=100, step=1)
 
                     with gr.Row():
-                        width_slider     = gr.Slider(label="Width",            value=512, minimum=256, maximum=1024, step=64)
-                        height_slider    = gr.Slider(label="Height",           value=512, minimum=256, maximum=1024, step=64)
+                        width_slider     = gr.Slider(label="Width", value=512, minimum=256, maximum=1024, step=64)
+                        height_slider    = gr.Slider(label="Height", value=512, minimum=256, maximum=1024, step=64)
 
                     with gr.Row():
-                        length_slider    = gr.Slider(label="Animation length", value=16,  minimum=8,   maximum=24,   step=1)
-                        cfg_scale_slider = gr.Slider(label="CFG Scale",        value=7.5, minimum=0,   maximum=20)
+                        length_slider    = gr.Slider(label="Animation length", value=16,  minimum=8,   maximum=40,   step=1)
+                        cfg_scale_slider = gr.Slider(label="CFG Scale", value=7.5, minimum=0,   maximum=20)
                     
                     with gr.Row():
-                        context_length  = gr.Slider(label="Context length",        value=20, minimum=10,   maximum=40, step=1)
-                        context_overlap = gr.Slider(label="Context overlap",        value=20, minimum=10,   maximum=40, step=1)
+                        context_length  = gr.Slider(label="Context length", value=20, minimum=5,   maximum=40, step=1, info="Condition: [Context length] * [Context stride] - [Context overlap] > 0. If not you'll get an error. Will simplify this eventually.")
+                        context_overlap = gr.Slider(label="Context overlap", value=20, minimum=5,   maximum=40, step=1)
 
                     with gr.Row():
-                        context_stride = gr.Slider(label="Context stride",        value=0, minimum=0,   maximum=20, step=1)
+                        context_stride = gr.Slider(label="Context stride", value=1, minimum=1,   maximum=20, step=1)
                         fp16 = gr.Checkbox(label="FP16", value=True)
                     
+                    def update_context_overlap(context_length, context_stride):
+                        maximum = context_length * context_stride - 1
+                        return gr.Slider.update(minimum=1, maximum=maximum)
+                    
+                    context_length.change(fn=update_context_overlap, inputs=[context_length, context_overlap], outputs=[context_stride])
+
                     with gr.Row():
                         seed_textbox = gr.Textbox(label="Seed", value=-1)
                         seed_button  = gr.Button(value="\U0001F3B2", elem_classes="toolbutton")
@@ -518,6 +521,17 @@ def generate_tab_ui():
                     generate_button = gr.Button(value="Generate", variant='primary')
                     
                 result_video = gr.Video(label="Generated Animation", interactive=False)
+
+            def update_init_image_dropdown(init_image_dropdown, sampler_dropdown):
+                sampler_choices = list(scheduler_dict.keys())
+                if init_image_dropdown != "none":
+                    sampler_choices.remove("Euler")
+
+                sampler_value = "DDIM" if sampler_dropdown == "Euler" else sampler_dropdown
+                    
+                return gr.Dropdown.update(choices=sampler_choices, value=sampler_value)
+
+            init_image_dropdown.change(fn=update_init_image_dropdown, inputs=[init_image_dropdown, sampler_dropdown], outputs=[sampler_dropdown])
 
             generate_button.click(
                 fn=controller.animate,

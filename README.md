@@ -8,18 +8,20 @@ This a fork of the official repo. Made specifically to run in Colab with gradio 
 (Original colab by [@camenduru](https://github.com/camenduru))
 
 ## Features
-- Loading of multiple LoRAs (Without degrading the network with each generation)
-- Longer videos via moving context window (Credit to https://github.com/dajes/AnimateDiff/tree/longer_videos)
-- 100% inference speed due to fp16 (Credit to https://github.com/dajes/AnimateDiff/tree/longer_videos)
+- `28/07/2023` Loading of multiple LoRAs (Without degrading the network with each generation)
+- `28/07/2023` 100% inference speed due to fp16 (Credit to https://github.com/dajes/AnimateDiff/tree/longer_videos)
+- `28/07/2023` Download models via UI
+- `29/07/2023` Init image. Euler sampler is disabled when using init images. (Original implementation by https://github.com/talesofai/AnimateDiff)
 
 ## Todo
-- ~~Random seed doesn't seem to be working properly~~
-- Init image
-- Configs tab
-- ~~Download models via UI~~
-- Load/Save from configs
+- Longer videos via moving context window (Credit to https://github.com/dajes/AnimateDiff/tree/longer_videos)
 - Implement rife-ncnn-vulkan (Idea from https://github.com/neggles/animatediff-cli)
+- Load/Save from configs
+- Configs tab
 
+## Why not build this as an A1111 extension?
+- There's already an A1111 Extension at https://github.com/continue-revolution/sd-webui-animatediff
+- Some features are easier to implement by building this seperately. It will allow us to explore different techniques to improve AnimateDiff.
 
 ## Output from default parameters for testing
 ![Example out](__assets__/animations/example.gif)
@@ -59,7 +61,23 @@ This should be the default parameters that are loaded when you first run. When t
 
 ```
 
+## Output with Init image
+![Example init image](__assets__/animations/example_init_image.gif)
 
+With init image:
+
+![init image](configs/prompts/yoimiya-init.jpg)
+
+Same config as above but with `configs/prompts/yoimiya-init.jpg` as init image.
+
+## Definitions
+```
+context_length: the length of the sliding window (limited by motion modules capacity), default to L.
+context_overlap: how much neighbouring contexts overlap. By default context_length / 2
+context_stride: (2^context_stride) is a max stride between 2 neighbour frames. By default 0
+
+By dajes @ https://github.com/guoyww/AnimateDiff/pull/25
+```
 
 
 ## From original readme

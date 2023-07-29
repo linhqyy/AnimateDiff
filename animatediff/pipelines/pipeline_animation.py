@@ -278,7 +278,7 @@ class AnimationPipeline(DiffusionPipeline):
                 attention_mask = uncond_input.attention_mask.to(device)
             else:
                 attention_mask = None
-
+        
             uncond_input_ids = uncond_input.input_ids
             uncond_input_ids, attention_mask = self.insert_inversions(uncond_input_ids, attention_mask)
             uncond_embeddings = self.text_encoder(
@@ -487,6 +487,7 @@ class AnimationPipeline(DiffusionPipeline):
             len(list(seq_policy(i, num_inference_steps, latents.shape[2], temporal_context, strides, overlap)))
             for i in range(len(timesteps))
         )
+
         # Denoising loop
         num_warmup_steps = len(timesteps) - num_inference_steps * self.scheduler.order
         with self.progress_bar(total=total) as progress_bar:
@@ -519,6 +520,7 @@ class AnimationPipeline(DiffusionPipeline):
                 if i == len(timesteps) - 1 or ((i + 1) > num_warmup_steps and (i + 1) % self.scheduler.order == 0):
                     if callback is not None and i % callback_steps == 0:
                         callback(i, t, latents)
+
 
         # Post-processing
         video = self.decode_latents(latents)
