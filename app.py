@@ -517,13 +517,14 @@ def generate_tab_ui():
                 result_video = gr.Video(label="Generated Animation", interactive=False)
 
             def update_init_image_dropdown(init_image_dropdown, sampler_dropdown):
-                if init_image_dropdown == "none":
-                    sampler_choices = list(scheduler_dict.keys())
-                    sampler_choices.remove(EulerDiscreteScheduler)
+                print(sampler_dropdown)
+                sampler_choices = list(scheduler_dict.keys())
+                if init_image_dropdown != "none":
+                    sampler_choices.remove("Euler")
 
-                if sampler_dropdown == EulerDiscreteScheduler:
-                    sampler_value = DDIMScheduler                
-                return gr.Dropdown.update(choices=list(scheduler_dict.keys()), value=sampler_value)
+                sampler_value = "DDIM" if sampler_dropdown == "Euler" else sampler_dropdown
+                    
+                return gr.Dropdown.update(choices=sampler_choices, value=sampler_value)
 
             init_image_dropdown.change(fn=update_init_image_dropdown, inputs=[init_image_dropdown, sampler_dropdown], outputs=[sampler_dropdown])
 

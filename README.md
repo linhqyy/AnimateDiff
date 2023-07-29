@@ -11,15 +11,13 @@ This a fork of the official repo. Made specifically to run in Colab with gradio 
 - Loading of multiple LoRAs (Without degrading the network with each generation)
 - Longer videos via moving context window (Credit to https://github.com/dajes/AnimateDiff/tree/longer_videos)
 - 100% inference speed due to fp16 (Credit to https://github.com/dajes/AnimateDiff/tree/longer_videos)
-- `29/07/2023` Init image. Euler sampler is disabled when using
+- `28/07/2023` Download models via UI
+- `29/07/2023` Init image. Euler sampler is disabled when using init images. (Original implementation by https://github.com/talesofai/AnimateDiff)
 
 ## Todo
-- ~~Random seed doesn't seem to be working properly~~
-- Init image
-- Configs tab
-- ~~Download models via UI~~
-- Load/Save from configs
 - Implement rife-ncnn-vulkan (Idea from https://github.com/neggles/animatediff-cli)
+- Load/Save from configs
+- Configs tab
 
 ## Why not build this as an A1111 extension?
 - There's already an A1111 Extension at https://github.com/continue-revolution/sd-webui-animatediff
@@ -62,6 +60,15 @@ This should be the default parameters that are loaded when you first run. When t
 
 
 ```
+
+## Output with Init image
+![Example init image](__assets__/animations/example_init_image.gif)
+
+With init image:
+
+![init image](configs/prompts/yoimiya-init.jpg)
+
+Same config as above but with `configs/prompts/yoimiya-init.jpg` as init image.
 
 ## Definitions
 ```
