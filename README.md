@@ -9,7 +9,7 @@ This a fork of the official repo. Made specifically to run in Colab with gradio 
 
 ## Features
 - `39/07/2023` Longer videos via moving context window. Experimental. (Credit to https://github.com/dajes/AnimateDiff/tree/longer_videos)
-- `29/07/2023` Init image. Euler sampler is disabled when using init images. (Original implementation by https://github.com/talesofai/AnimateDiff)
+- `29/07/2023` Init image. Euler sampler is disabled when using init images. (Credit to https://github.com/talesofai/AnimateDiff)
 - `28/07/2023` Download models via UI
 - `28/07/2023` 100% inference speed due to fp16 (Credit to https://github.com/dajes/AnimateDiff/tree/longer_videos)
 - `28/07/2023` Loading of multiple LoRAs (Without degrading the network with each generation)
@@ -20,14 +20,44 @@ This a fork of the official repo. Made specifically to run in Colab with gradio 
 - Load/Save from configs
 - Configs tab
 
-## Why not build this as an A1111 extension?
-- There's already an A1111 Extension at https://github.com/continue-revolution/sd-webui-animatediff
-- Some features are easier to implement by building this seperately. It will allow us to explore different techniques to improve AnimateDiff.
+## Testing and replication
 
-## Output from default parameters for testing
-![Example out](__assets__/animations/example.gif)
+<table width="100%">
+    <tr>
+        <td width="20%"><img src="__assets__/animations/example_euler.gif"></td>
+        <td width="20%"><img src="__assets__/animations/example_DDIM.gif"></td>
+        <td width="20%"><img src="__assets__/animations/example_PNDM.gif"></td>
+        <td width="20%"><img src="__assets__/animations/example_init_image.gif"></td>
+        <td width="20%"><img src="__assets__/animations/example_init_image_longer_video.gif"></td>
+    </tr>
+    <tr>
+        <td width="20%">Euler</td>
+        <td width="20%">DDIM</td>
+        <td width="20%">PNDM</td>
+        <td width="20%">Euler with init image</td>
+        <td width="20%">Double length video DDIM with init image using sliding context </td>
+    </tr>
+    <tr>
+        <td width="20%">~80s</td>
+        <td width="20%">~80s</td>
+        <td width="20%">~110s</td>
+        <td width="20%">~80s</td>
+        <td width="20%">~700s </td>
+    </tr>
+    <tr>
+        <td width="20%">sampler: "Euler"</td>
+        <td width="20%">sampler: "DDIM"</td>
+        <td width="20%">sampler: "PNDM"</td>
+        <td width="20%">sampler: "Euler"</br>init_image: "configs/prompts/yoimiya-init.jpg"</td>
+        <td width="20%">sampler: "DDIM"</br>init_image: "configs/prompts/yoimiya-init.jpg"</br>temporal_context: 20</br>overlap: 5</br>strides: 1</td>
+    </tr>
+</table>
 
-This should be the default parameters that are loaded when you first run. When the UI first loads. Click generate to see if you get the same results. Just input the seed: 86529444.
+Init image:
+
+![Init image](configs/prompts/yoimiya-init.jpg)
+
+Common config between tests:
 
 ```
 {
@@ -36,55 +66,6 @@ This should be the default parameters that are loaded when you first run. When t
     "base_checkpoint": "AnythingV5Ink_v5PrtRE.safetensors",
     "prompt": "1girl, yoimiya (genshin impact), origen, line, comet, wink, Masterpiece \uff0cBestQuality \uff0cUltraDetailed",
     "n_prompt": "NSFW, lr, nsfw,(sketch, duplicate, ugly, huge eyes, text, logo, monochrome, worst face, (bad and mutated hands:1.3), (worst quality:2.0), (low quality:2.0), (blurry:2.0), horror, geometry, bad_prompt_v2, (bad hands), (missing fingers), multiple limbs, bad anatomy, (interlocked fingers:1.2), Ugly Fingers, (extra digit and hands and fingers and legs and arms:1.4), crown braid, ((2girl)), (deformed fingers:1.2), (long fingers:1.2),succubus wings,horn,succubus horn,succubus hairstyle, (bad-artist-anime), bad-artist, bad hand, grayscale, skin spots, acnes, skin blemishes",
-    "sampler": "Euler",
-    "num_inference_steps": 25,
-    "guidance_scale": 7.5,
-    "width": 512,
-    "height": 512,
-    "video_length": 16,
-    "seed": 86529444,
-    "temporal_context": 20,
-    "strides": 0,
-    "overlap": 20,
-    "fp16": true,
-    "lora_list": [
-        {
-            "path": "/content/AnimateDiff/models/loras/yomiya.safetensors",
-            "alpha": 0.8
-        },
-        {
-            "path": "/content/AnimateDiff/models/loras/LineLine2D.safetensors",
-            "alpha": 0.8
-        }
-    ]
-}
-
-
-```
-
-## Output with Init image
-![Example init image](__assets__/animations/example_init_image.gif)
-
-With init image:
-
-![init image](configs/prompts/yoimiya-init.jpg)
-
-Same config as above but with `configs/prompts/yoimiya-init.jpg` as init image.
-
-## Output with Init image and 5 second video using sliding context
-![Example init image](__assets__/animations/example_init_image_longer_video.gif)
-
-Configs:
-
-```
-{
-    "stable_diffusion": "/content/AnimateDiff/models/StableDiffusion/stable-diffusion-v1-5/",
-    "motion_model": "mm_sd_v14.ckpt",
-    "base_checkpoint": "AnythingV5Ink_v5PrtRE.safetensors",
-    "init_image": "configs/prompts/yoimiya-init.jpg",
-    "prompt": "1girl, yoimiya (genshin impact), origen, line, comet, wink, Masterpiece \uff0cBestQuality \uff0cUltraDetailed",
-    "n_prompt": "NSFW, lr, nsfw,(sketch, duplicate, ugly, huge eyes, text, logo, monochrome, worst face, (bad and mutated hands:1.3), (worst quality:2.0), (low quality:2.0), (blurry:2.0), horror, geometry, bad_prompt_v2, (bad hands), (missing fingers), multiple limbs, bad anatomy, (interlocked fingers:1.2), Ugly Fingers, (extra digit and hands and fingers and legs and arms:1.4), crown braid, ((2girl)), (deformed fingers:1.2), (long fingers:1.2),succubus wings,horn,succubus horn,succubus hairstyle, (bad-artist-anime), bad-artist, bad hand, grayscale, skin spots, acnes, skin blemishes",
-    "sampler": "PNDM",
     "num_inference_steps": 25,
     "guidance_scale": 7.5,
     "width": 512,
@@ -108,6 +89,11 @@ Configs:
 }
 
 ```
+
+## Why not build this as an A1111 extension?
+- There's already an A1111 Extension at https://github.com/continue-revolution/sd-webui-animatediff
+- Some features are easier to implement by building this seperately. It will allow us to explore different techniques to improve AnimateDiff.
+
 ## Definitions
 ```
 context_length: the length of the sliding window (limited by motion modules capacity), default to L.
@@ -116,6 +102,7 @@ context_stride: (2^context_stride) is a max stride between 2 neighbour frames. B
 
 By dajes @ https://github.com/guoyww/AnimateDiff/pull/25
 ```
+
 
 
 ## From original readme

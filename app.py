@@ -30,9 +30,9 @@ import re
 sample_idx     = 0
 max_LoRAs      = 5
 scheduler_dict = {
-    "PNDM": PNDMScheduler, # Works with Init image. Could be better than DDIM?
-    "DDIM": DDIMScheduler, # Works with Init image. Faster
     "Euler": EulerDiscreteScheduler, # Doesn't work with Init image
+    "DDIM": DDIMScheduler, # Works with Init image. Faster
+    "PNDM": PNDMScheduler, # Works with Init image. Could be better than DDIM?
 }
 
 css = """
@@ -493,8 +493,8 @@ def generate_tab_ui():
             with gr.Row().style(equal_height=False):
                 with gr.Column():
                     with gr.Row():
-                        sampler_dropdown   = gr.Dropdown(label="Sampling method", choices=list(scheduler_dict.keys()), value=list(scheduler_dict.keys())[0])
-                        sample_step_slider = gr.Slider(label="Sampling steps", value=25, minimum=10, maximum=100, step=1)
+                        sampler_dropdown   = gr.Dropdown(label="Sampling method", choices=list(scheduler_dict.keys()), value=list(scheduler_dict.keys())[0], info="Euler: 80s, PNDM: 110s, DDIM: 80s")
+                        sample_step_slider = gr.Slider(label="Sampling steps", value=25, minimum=10, maximum=100, step=1, info="Increase this if you find the details lacking. Inference will take longer")
 
                     with gr.Row():
                         width_slider     = gr.Slider(label="Width", value=512, minimum=256, maximum=1024, step=64)
@@ -502,10 +502,10 @@ def generate_tab_ui():
 
                     with gr.Row():
                         length_slider    = gr.Slider(label="Animation length", value=16,  minimum=8,   maximum=24,   step=1)
-                        cfg_scale_slider = gr.Slider(label="CFG Scale", value=7.5, minimum=0,   maximum=20)
+                        cfg_scale_slider = gr.Slider(label="CFG Scale", value=7.5, minimum=0,   maximum=20, info="Increase this if you find the details lacking. Balance it with the sampling steps.")
 
                     with gr.Row():
-                        fp16 = gr.Checkbox(label="FP16", value=True, info="Generates videos 2-3 times faster. ")
+                        fp16 = gr.Checkbox(label="FP16", value=True, info="Generates videos ~2.7 times faster. ")
                         enable_longer_videos = gr.Checkbox(label="Enable longer videos", value=False, info="Enable this if you want to generate videos longer than 24 frames. Inference will be ~2 times slower even for same length videos.")
 
                     with gr.Row(visible=False) as longer_video_row:
