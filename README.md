@@ -15,6 +15,7 @@ This a fork of the official repo. Made specifically to run in Colab with gradio 
 
 ## Todo
 - Longer videos via moving context window (Credit to https://github.com/dajes/AnimateDiff/tree/longer_videos)
+- Init image strength and decay options. Allowing you to control how strong the generation should ahear to the initial image and how quickly it moves away from it.
 - Implement rife-ncnn-vulkan (Idea from https://github.com/neggles/animatediff-cli)
 - Load/Save from configs
 - Configs tab
@@ -70,6 +71,43 @@ With init image:
 
 Same config as above but with `configs/prompts/yoimiya-init.jpg` as init image.
 
+## Output with Init image and 5 second video using sliding context
+![Example init image](__assets__/animations/example_init_image_longer_video.gif)
+
+Configs:
+
+```
+{
+    "stable_diffusion": "/content/AnimateDiff/models/StableDiffusion/stable-diffusion-v1-5/",
+    "motion_model": "mm_sd_v14.ckpt",
+    "base_checkpoint": "AnythingV5Ink_v5PrtRE.safetensors",
+    "init_image": "configs/prompts/yoimiya-init.jpg",
+    "prompt": "1girl, yoimiya (genshin impact), origen, line, comet, wink, Masterpiece \uff0cBestQuality \uff0cUltraDetailed",
+    "n_prompt": "NSFW, lr, nsfw,(sketch, duplicate, ugly, huge eyes, text, logo, monochrome, worst face, (bad and mutated hands:1.3), (worst quality:2.0), (low quality:2.0), (blurry:2.0), horror, geometry, bad_prompt_v2, (bad hands), (missing fingers), multiple limbs, bad anatomy, (interlocked fingers:1.2), Ugly Fingers, (extra digit and hands and fingers and legs and arms:1.4), crown braid, ((2girl)), (deformed fingers:1.2), (long fingers:1.2),succubus wings,horn,succubus horn,succubus hairstyle, (bad-artist-anime), bad-artist, bad hand, grayscale, skin spots, acnes, skin blemishes",
+    "sampler": "PNDM",
+    "num_inference_steps": 25,
+    "guidance_scale": 7.5,
+    "width": 512,
+    "height": 512,
+    "video_length": 40,
+    "seed": 83026725601855,
+    "temporal_context": 20,
+    "strides": 1,
+    "overlap": 5,
+    "fp16": true,
+    "lora_list": [
+        {
+            "path": "/content/AnimateDiff/models/loras/LineLine2D.safetensors",
+            "alpha": 0.8
+        },
+        {
+            "path": "/content/AnimateDiff/models/loras/yomiya.safetensors",
+            "alpha": 0.8
+        }
+    ]
+}
+
+```
 ## Definitions
 ```
 context_length: the length of the sliding window (limited by motion modules capacity), default to L.

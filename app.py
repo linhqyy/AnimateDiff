@@ -332,6 +332,7 @@ class AnimateController:
             "stable_diffusion": stable_diffusion_dropdown,
             "motion_model": motion_module_dropdown,
             "base_checkpoint": checkpoint_dropdown,
+            "init_image": init_image,
             "prompt": prompt_textbox,
             "n_prompt": negative_prompt_textbox,
             "sampler": sampler_dropdown,
@@ -469,7 +470,7 @@ def generate_tab_ui():
                     label="Select init image",
                     info="Does not work with Euler sampling. Will default to DDIM if Euler was selected. PNDMScheduler is slower but could be better than DDIM. I'm not sure. Let me know if you find out.",
                     choices=["none"] + controller.init_image_list,
-                    value=controller.init_image_list[0],
+                    value="none",
                     interactive=True,
                 )
 
@@ -498,14 +499,26 @@ def generate_tab_ui():
                     with gr.Row():
                         length_slider    = gr.Slider(label="Animation length", value=16,  minimum=8,   maximum=40,   step=1)
                         cfg_scale_slider = gr.Slider(label="CFG Scale", value=7.5, minimum=0,   maximum=20)
-                    
-                    with gr.Row():
-                        context_length  = gr.Slider(label="Context length", value=20, minimum=5,   maximum=40, step=1, info="Condition: [Context length] * [Context stride] - [Context overlap] > 0. If not you'll get an error. Will simplify this eventually.")
-                        context_overlap = gr.Slider(label="Context overlap", value=20, minimum=5,   maximum=40, step=1)
 
                     with gr.Row():
+                        fp16 = gr.Checkbox(label="FP16", value=True, info="Generates videos 2-3 times faster. ")
+                        enable_longer_videos = gr.Checkbox(label="Enable longer videos", value=True, info="Enable this if you want to generate videos longer than 24 frames. Inference will be ~2 times slower even for same length videos.")
+
+                    with gr.Row(visible=False) as longer_video_row:
+                        context_length  = gr.Slider(label="Context length", value=10, minimum=5,   maximum=40, step=1, info="Keep this same as [Animation length] unless you want to try animations longer than 24")
+                        context_overlap = gr.Slider(label="Context overlap", value=5, minimum=5,   maximum=20, step=1, info="Condition: [Context length] * [Context stride] - [Context overlap] > 0. If not you'll get an error. Will simplify this eventually.")
                         context_stride = gr.Slider(label="Context stride", value=1, minimum=1,   maximum=20, step=1)
-                        fp16 = gr.Checkbox(label="FP16", value=True)
+
+
+                    def update_enable_longer_videos(enable_longer_videos):
+                        if enable_longer_videos:
+                            return [gr.Slider.update(maximum=100), gr.Slider.update(value=10), longer_video_row.update(visible=True)]
+                        else:
+                            # High number to never activate longer video function
+                            return [gr.Slider.update(maximum=24), gr.Slider.update(value=100), longer_video_row.update(visible=False)]
+                        
+                    enable_longer_videos.change(fn=update_enable_longer_videos, inputs=[enable_longer_videos], outputs=[length_slider, context_length, longer_video_row])
+
                     
                     def update_context_overlap(context_length, context_stride):
                         maximum = context_length * context_stride - 1
