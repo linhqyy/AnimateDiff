@@ -311,7 +311,7 @@ class AnimateController:
         # Handle none init image
         if init_image == "none": init_image = None
 
-        if enable_longer_videos:
+        if not enable_longer_videos:
             context_length = 100
 
         sample = pipeline(
