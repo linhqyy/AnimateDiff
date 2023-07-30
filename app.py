@@ -30,9 +30,9 @@ import re
 sample_idx     = 0
 max_LoRAs      = 5
 scheduler_dict = {
-    "PNDM": PNDMScheduler, # Works with Init image. Could be better than DDIM?
-    "DDIM": DDIMScheduler, # Works with Init image. Faster
     "Euler": EulerDiscreteScheduler, # Doesn't work with Init image
+    "DDIM": DDIMScheduler, # Works with Init image. Faster
+    "PNDM": PNDMScheduler, # Works with Init image. Could be better than DDIM?
 }
 
 css = """
@@ -252,6 +252,7 @@ class AnimateController:
         height_slider, 
         cfg_scale_slider, 
         seed_textbox,
+        enable_longer_videos,
         context_length,
         context_stride,
         context_overlap,
@@ -310,6 +311,9 @@ class AnimateController:
         # Handle none init image
         if init_image == "none": init_image = None
 
+        if not enable_longer_videos:
+            context_length = 1000
+
         sample = pipeline(
             prompt              = prompt_textbox,
             init_image          = init_image,
@@ -332,6 +336,7 @@ class AnimateController:
             "stable_diffusion": stable_diffusion_dropdown,
             "motion_model": motion_module_dropdown,
             "base_checkpoint": checkpoint_dropdown,
+            "init_image": init_image,
             "prompt": prompt_textbox,
             "n_prompt": negative_prompt_textbox,
             "sampler": sampler_dropdown,
@@ -469,7 +474,7 @@ def generate_tab_ui():
                     label="Select init image",
                     info="Does not work with Euler sampling. Will default to DDIM if Euler was selected. PNDMScheduler is slower but could be better than DDIM. I'm not sure. Let me know if you find out.",
                     choices=["none"] + controller.init_image_list,
-                    value=controller.init_image_list[0],
+                    value="none",
                     interactive=True,
                 )
 
@@ -488,30 +493,41 @@ def generate_tab_ui():
             with gr.Row().style(equal_height=False):
                 with gr.Column():
                     with gr.Row():
-                        sampler_dropdown   = gr.Dropdown(label="Sampling method", choices=list(scheduler_dict.keys()), value=list(scheduler_dict.keys())[0])
-                        sample_step_slider = gr.Slider(label="Sampling steps", value=25, minimum=10, maximum=100, step=1)
+                        sampler_dropdown   = gr.Dropdown(label="Sampling method", choices=list(scheduler_dict.keys()), value=list(scheduler_dict.keys())[0], info="Euler: 80s, PNDM: 110s, DDIM: 80s")
+                        sample_step_slider = gr.Slider(label="Sampling steps", value=25, minimum=10, maximum=100, step=1, info="Increase this if you find the details lacking. Inference will take longer")
 
                     with gr.Row():
                         width_slider     = gr.Slider(label="Width", value=512, minimum=256, maximum=1024, step=64)
                         height_slider    = gr.Slider(label="Height", value=512, minimum=256, maximum=1024, step=64)
 
                     with gr.Row():
-                        length_slider    = gr.Slider(label="Animation length", value=16,  minimum=8,   maximum=40,   step=1)
-                        cfg_scale_slider = gr.Slider(label="CFG Scale", value=7.5, minimum=0,   maximum=20)
-                    
-                    with gr.Row():
-                        context_length  = gr.Slider(label="Context length", value=20, minimum=5,   maximum=40, step=1, info="Condition: [Context length] * [Context stride] - [Context overlap] > 0. If not you'll get an error. Will simplify this eventually.")
-                        context_overlap = gr.Slider(label="Context overlap", value=20, minimum=5,   maximum=40, step=1)
+                        length_slider    = gr.Slider(label="Animation length", value=16,  minimum=8,   maximum=24,   step=1)
+                        cfg_scale_slider = gr.Slider(label="CFG Scale", value=7.5, minimum=0,   maximum=20, info="Increase this if you find the details lacking. Balance it with the sampling steps.")
 
                     with gr.Row():
-                        context_stride = gr.Slider(label="Context stride", value=1, minimum=1,   maximum=20, step=1)
-                        fp16 = gr.Checkbox(label="FP16", value=True)
+                        fp16 = gr.Checkbox(label="FP16", value=True, info="Generates videos ~2.7 times faster. ")
+                        enable_longer_videos = gr.Checkbox(label="Enable longer videos", value=False, info="Enable this if you want to generate videos longer than 24 frames. Inference will be ~2 times slower even for same length videos.")
+
+                    with gr.Row(visible=False) as longer_video_row:
+                        context_length  = gr.Slider(label="Context length", value=10, minimum=5,   maximum=24, step=1, info="Keep this same as [Animation length] unless you want to try animations longer than 24")
+                        context_overlap = gr.Slider(label="Context overlap", value=5, minimum=5,   maximum=23, step=1, info="Condition: [Context length] * [Context stride] - [Context overlap] > 0. If not you'll get an error. Will simplify this eventually.")
+                        context_stride = gr.Slider(label="Context stride", value=1, minimum=1,   maximum=3, step=1)
+
+
+                    def update_enable_longer_videos(enable_longer_videos):
+                        if enable_longer_videos:
+                            return [gr.Slider.update(maximum=100), longer_video_row.update(visible=True)]
+                        else:
+                            # High number to never activate longer video function
+                            return [gr.Slider.update(maximum=24), longer_video_row.update(visible=False)]
+                        
+                    enable_longer_videos.change(fn=update_enable_longer_videos, inputs=[enable_longer_videos], outputs=[length_slider, longer_video_row])
+
+                    # def update_context_overlap(context_length, context_stride):
+                    #     maximum = context_length * context_stride - 1
+                    #     return gr.Slider.update(minimum=1, maximum=maximum)
                     
-                    def update_context_overlap(context_length, context_stride):
-                        maximum = context_length * context_stride - 1
-                        return gr.Slider.update(minimum=1, maximum=maximum)
-                    
-                    context_length.change(fn=update_context_overlap, inputs=[context_length, context_overlap], outputs=[context_stride])
+                    # context_length.change(fn=update_context_overlap, inputs=[context_length, context_overlap], outputs=[context_stride])
 
                     with gr.Row():
                         seed_textbox = gr.Textbox(label="Seed", value=-1)
@@ -549,6 +565,7 @@ def generate_tab_ui():
                     height_slider, 
                     cfg_scale_slider, 
                     seed_textbox,
+                    enable_longer_videos,
                     context_length,
                     context_stride,
                     context_overlap,
