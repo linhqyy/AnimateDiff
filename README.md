@@ -1,5 +1,5 @@
-# AnimateDiff
 <br><img src="__assets__/figs/gradio2.png" style="width: 50em; margin-top: 1em">
+# AnimateDiff
 
 This a fork of the official repo. Made specifically to run in Colab with gradio UI. Local requires 12GB VRAM
 
@@ -24,31 +24,39 @@ This a fork of the official repo. Made specifically to run in Colab with gradio 
 
 <table width="100%">
     <tr>
+        <td width="20%">Example</td>
+        <td width="20%">Caption</td>
+        <td width="20%">Inference time</td>
+        <td width="20%">Config</td>
+    </tr>
+    <tr>
         <td width="20%"><img src="__assets__/animations/example_euler.gif"></td>
-        <td width="20%"><img src="__assets__/animations/example_DDIM.gif"></td>
-        <td width="20%"><img src="__assets__/animations/example_PNDM.gif"></td>
-        <td width="20%"><img src="__assets__/animations/example_init_image.gif"></td>
-        <td width="20%"><img src="__assets__/animations/example_init_image_longer_video.gif"></td>
-    </tr>
-    <tr>
         <td width="20%">Euler</td>
-        <td width="20%">DDIM</td>
-        <td width="20%">PNDM</td>
-        <td width="20%">Euler with init image</td>
-        <td width="20%">Double length video DDIM with init image using sliding context </td>
-    </tr>
-    <tr>
         <td width="20%">~80s</td>
-        <td width="20%">~80s</td>
-        <td width="20%">~110s</td>
-        <td width="20%">~80s</td>
-        <td width="20%">~700s </td>
-    </tr>
-    <tr>
         <td width="20%">sampler: "Euler"</td>
+    </tr>
+    <tr>
+        <td width="20%"><img src="__assets__/animations/example_DDIM.gif"></td>
+        <td width="20%">DDIM</td>
+        <td width="20%">~80s</td>
         <td width="20%">sampler: "DDIM"</td>
+    </tr>
+    <tr>
+        <td width="20%"><img src="__assets__/animations/example_PNDM.gif"></td>
+        <td width="20%">PNDM</td>
+        <td width="20%">~110s</td>
         <td width="20%">sampler: "PNDM"</td>
+    </tr>
+    <tr>
+        <td width="20%"><img src="__assets__/animations/example_init_image.gif"></td>
+        <td width="20%">Euler with init image</td>
+        <td width="20%">~80s</td>
         <td width="20%">sampler: "Euler"</br>init_image: "configs/prompts/yoimiya-init.jpg"</td>
+    </tr>
+    <tr>
+        <td width="20%"><img src="__assets__/animations/example_init_image_longer_video.gif"></td>
+        <td width="20%">Double length video DDIM with init image using sliding context </td>
+        <td width="20%">~700s </td>
         <td width="20%">sampler: "DDIM"</br>init_image: "configs/prompts/yoimiya-init.jpg"</br>temporal_context: 20</br>overlap: 5</br>strides: 1</td>
     </tr>
 </table>
