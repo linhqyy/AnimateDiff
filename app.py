@@ -252,6 +252,7 @@ class AnimateController:
         height_slider, 
         cfg_scale_slider, 
         seed_textbox,
+        enable_longer_videos,
         context_length,
         context_stride,
         context_overlap,
@@ -309,6 +310,9 @@ class AnimateController:
         
         # Handle none init image
         if init_image == "none": init_image = None
+
+        if enable_longer_videos:
+            context_length = 100
 
         sample = pipeline(
             prompt              = prompt_textbox,
@@ -497,12 +501,12 @@ def generate_tab_ui():
                         height_slider    = gr.Slider(label="Height", value=512, minimum=256, maximum=1024, step=64)
 
                     with gr.Row():
-                        length_slider    = gr.Slider(label="Animation length", value=16,  minimum=8,   maximum=40,   step=1)
+                        length_slider    = gr.Slider(label="Animation length", value=16,  minimum=8,   maximum=100,   step=1)
                         cfg_scale_slider = gr.Slider(label="CFG Scale", value=7.5, minimum=0,   maximum=20)
 
                     with gr.Row():
                         fp16 = gr.Checkbox(label="FP16", value=True, info="Generates videos 2-3 times faster. ")
-                        enable_longer_videos = gr.Checkbox(label="Enable longer videos", value=True, info="Enable this if you want to generate videos longer than 24 frames. Inference will be ~2 times slower even for same length videos.")
+                        enable_longer_videos = gr.Checkbox(label="Enable longer videos", value=False, info="Enable this if you want to generate videos longer than 24 frames. Inference will be ~2 times slower even for same length videos.")
 
                     with gr.Row(visible=False) as longer_video_row:
                         context_length  = gr.Slider(label="Context length", value=10, minimum=5,   maximum=40, step=1, info="Keep this same as [Animation length] unless you want to try animations longer than 24")
@@ -512,19 +516,19 @@ def generate_tab_ui():
 
                     def update_enable_longer_videos(enable_longer_videos):
                         if enable_longer_videos:
-                            return [gr.Slider.update(maximum=100), gr.Slider.update(value=10), longer_video_row.update(visible=True)]
+                            return [gr.Slider.update(maximum=100), longer_video_row.update(visible=True)]
                         else:
                             # High number to never activate longer video function
-                            return [gr.Slider.update(maximum=24), gr.Slider.update(value=100), longer_video_row.update(visible=False)]
+                            return [gr.Slider.update(maximum=100), longer_video_row.update(visible=False)]
                         
-                    enable_longer_videos.change(fn=update_enable_longer_videos, inputs=[enable_longer_videos], outputs=[length_slider, context_length, longer_video_row])
+                    enable_longer_videos.change(fn=update_enable_longer_videos, inputs=[enable_longer_videos], outputs=[length_slider, longer_video_row])
 
                     
-                    def update_context_overlap(context_length, context_stride):
-                        maximum = context_length * context_stride - 1
-                        return gr.Slider.update(minimum=1, maximum=maximum)
+                    # def update_context_overlap(context_length, context_stride):
+                    #     maximum = context_length * context_stride - 1
+                    #     return gr.Slider.update(minimum=1, maximum=maximum)
                     
-                    context_length.change(fn=update_context_overlap, inputs=[context_length, context_overlap], outputs=[context_stride])
+                    # context_length.change(fn=update_context_overlap, inputs=[context_length, context_overlap], outputs=[context_stride])
 
                     with gr.Row():
                         seed_textbox = gr.Textbox(label="Seed", value=-1)
@@ -562,6 +566,7 @@ def generate_tab_ui():
                     height_slider, 
                     cfg_scale_slider, 
                     seed_textbox,
+                    enable_longer_videos,
                     context_length,
                     context_stride,
                     context_overlap,
