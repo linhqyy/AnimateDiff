@@ -26,6 +26,7 @@ from animatediff.utils.convert_lora_with_backup import load_loras
 import requests
 import tqdm
 import re
+import shutil
 
 sample_idx     = 0
 max_LoRAs      = 5
@@ -257,6 +258,7 @@ class AnimateController:
         context_stride,
         context_overlap,
         fp16,
+        gif,
         lora_model_dropdown_0, # Need to find a better solution around this as Gradio doesn't allow dynamic number of inputs and refreshes values for direct inputs.
         lora_model_dropdown_1,
         lora_model_dropdown_2,
@@ -329,8 +331,18 @@ class AnimateController:
             fp16                = fp16,
         ).videos
 
-        save_sample_path = os.path.join(self.savedir, f"output-{datetime.now().strftime('%Y-%m-%dT%H-%M-%S')}.mp4")
+        # Create project folder
+        project_dir = os.path.join(self.savedir, f"run-{datetime.now().strftime('%Y-%m-%dT%H-%M-%S')}")
+
+        # Save as gif
+        if gif:
+            save_sample_path = os.path.join(project_dir, f"output.gif")
+            save_videos_grid(sample, save_sample_path, save_frame=True)
+
+        # Save as Mp4
+        save_sample_path = os.path.join(project_dir, f"output.mp4")
         save_videos_grid(sample, save_sample_path)
+
     
         sample_config = {
             "stable_diffusion": stable_diffusion_dropdown,
@@ -353,10 +365,13 @@ class AnimateController:
             "lora_list": lora_list
         }
         json_str = json.dumps(sample_config, indent=4)
-        with open(os.path.join(self.savedir, f"output-{datetime.now().strftime('%Y-%m-%dT%H-%M-%S')}.json"), "a") as f:
+        with open(os.path.join(project_dir, f"configs.json"), "a") as f:
             f.write(json_str)
             f.write("\n\n")
             
+        if init_image is not None:
+            shutil.copy(init_image, f"{project_dir}/init_image.jpg")
+
         return save_sample_path
         
 
@@ -505,7 +520,8 @@ def generate_tab_ui():
                         cfg_scale_slider = gr.Slider(label="CFG Scale", value=7.5, minimum=0,   maximum=20, info="Increase this if you find the details lacking. Balance it with the sampling steps.")
 
                     with gr.Row():
-                        fp16 = gr.Checkbox(label="FP16", value=True, info="Generates videos ~2.7 times faster. ")
+                        fp16 = gr.Checkbox(label="FP16", value=True, info="Generates videos ~2.7 times faster.")
+                        gif = gr.Checkbox(label="Enable GIF", value=True, info="Additionally creates GIF.")
                         enable_longer_videos = gr.Checkbox(label="Enable longer videos", value=False, info="Enable this if you want to generate videos longer than 24 frames. Inference will be ~2 times slower even for same length videos.")
 
                     with gr.Row(visible=False) as longer_video_row:
@@ -569,7 +585,8 @@ def generate_tab_ui():
                     context_length,
                     context_stride,
                     context_overlap,
-                    fp16
+                    fp16,
+                    gif
                 ] + lora_dropdown_list
                 + lora_alpha_slider_list,
                 outputs=[result_video]
