@@ -340,8 +340,8 @@ class AnimateController:
         #     save_videos_grid(sample, save_sample_path, save_frames=True)
 
         # Save as Mp4
-        save_sample_path = os.path.join(project_dir, f"output.mp4", save_frames=True, save_additional_gif=True)
-        save_videos_grid(sample, save_sample_path)
+        save_sample_path = os.path.join(project_dir, f"output.mp4")
+        save_videos_grid(sample, save_sample_path, save_frames=True, save_additional_gif=True)
     
         sample_config = {
             "stable_diffusion": stable_diffusion_dropdown,
