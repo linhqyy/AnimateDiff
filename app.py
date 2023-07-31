@@ -337,7 +337,7 @@ class AnimateController:
         # Save as gif
         if gif:
             save_sample_path = os.path.join(project_dir, f"output.gif")
-            save_videos_grid(sample, save_sample_path, save_frame=True)
+            save_videos_grid(sample, save_sample_path, save_frames=True)
 
         # Save as Mp4
         save_sample_path = os.path.join(project_dir, f"output.mp4")
