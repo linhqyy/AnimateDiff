@@ -26,7 +26,7 @@ def save_videos_grid(videos: torch.Tensor, path: str, rescale=False, n_rows=6, f
         x = (x * 255).numpy().astype(np.uint8)
 
         if save_frames:
-            im = Image.fromarray(A)
+            im = Image.fromarray(x)
             im_path = os.path.join(os.path.dirname(path), 'frames', f"{i}.png")
             im.save(im_path)
         outputs.append(x)
