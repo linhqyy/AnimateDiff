@@ -8,15 +8,14 @@ This a fork of the official repo. Made specifically to run in Colab with gradio 
 (Original colab by [@camenduru](https://github.com/camenduru))
 
 ## Features
-- `39/07/2023` Longer videos via moving context window. Experimental. (Credit to https://github.com/dajes/AnimateDiff/tree/longer_videos)
+- `31/07/2023` Additional GIF output. Default displays GIF since autolooping on gradio mp4 is not directly supported. Frames are also saved into the output folder. MP4 is still accessible via the mp4 tab in the output area of the UI.
+- `30/07/2023` Longer videos via moving context window. Experimental. (Credit to https://github.com/dajes/AnimateDiff/tree/longer_videos)
 - `29/07/2023` Init image. Euler sampler is disabled when using init images. (Credit to https://github.com/talesofai/AnimateDiff)
 - `28/07/2023` Download models via UI
 - `28/07/2023` 100% inference speed due to fp16 (Credit to https://github.com/dajes/AnimateDiff/tree/longer_videos)
 - `28/07/2023` Loading of multiple LoRAs (Without degrading the network with each generation)
 
 ## Todo
-- GIF download
-- Keep still frames
 - Allow uploading of init images
 - Init image strength and decay options. Allowing you to control how strong the generation should follow to the initial image and how quickly it diverges from it.
 - Implement rife-ncnn-vulkan (Idea from https://github.com/neggles/animatediff-cli)
@@ -31,6 +30,12 @@ This a fork of the official repo. Made specifically to run in Colab with gradio 
         <td width="20%">Caption</td>
         <td width="20%">Inference time</td>
         <td width="20%">Config</td>
+    </tr>
+    <tr>
+        <td width="20%"><img src="__assets__/animations/example_euler_fp32.gif"></td>
+        <td width="20%">Euler with FP32 instead of FP16 </td>
+        <td width="20%">~200s </td>
+        <td width="20%">sampler: "Euler"</br>FP16: False</td>
     </tr>
     <tr>
         <td width="20%"><img src="__assets__/animations/example_euler.gif"></td>
@@ -62,6 +67,7 @@ This a fork of the official repo. Made specifically to run in Colab with gradio 
         <td width="20%">~700s </td>
         <td width="20%">sampler: "DDIM"</br>init_image: "configs/prompts/yoimiya-init.jpg"</br>temporal_context: 20</br>overlap: 5</br>strides: 1</td>
     </tr>
+
 </table>
 
 Init image:

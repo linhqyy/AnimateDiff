@@ -258,7 +258,7 @@ class AnimateController:
         context_stride,
         context_overlap,
         fp16,
-        gif,
+        # gif,
         lora_model_dropdown_0, # Need to find a better solution around this as Gradio doesn't allow dynamic number of inputs and refreshes values for direct inputs.
         lora_model_dropdown_1,
         lora_model_dropdown_2,
@@ -335,14 +335,13 @@ class AnimateController:
         project_dir = os.path.join(self.savedir, f"run-{datetime.now().strftime('%Y-%m-%dT%H-%M-%S')}")
 
         # Save as gif
-        if gif:
-            save_sample_path = os.path.join(project_dir, f"output.gif")
-            save_videos_grid(sample, save_sample_path, save_frames=True)
+        # if gif:
+        #     save_sample_path = os.path.join(project_dir, f"output.gif")
+        #     save_videos_grid(sample, save_sample_path, save_frames=True)
 
         # Save as Mp4
-        save_sample_path = os.path.join(project_dir, f"output.mp4")
+        save_sample_path = os.path.join(project_dir, f"output.mp4", save_frames=True, save_additional_gif=True)
         save_videos_grid(sample, save_sample_path)
-
     
         sample_config = {
             "stable_diffusion": stable_diffusion_dropdown,
@@ -372,7 +371,7 @@ class AnimateController:
         if init_image is not None:
             shutil.copy(init_image, f"{project_dir}/init_image.jpg")
 
-        return save_sample_path
+        return save_sample_path, save_sample_path.replace(".mp4", ".gif")
         
 
 controller = AnimateController()
@@ -521,7 +520,7 @@ def generate_tab_ui():
 
                     with gr.Row():
                         fp16 = gr.Checkbox(label="FP16", value=True, info="Generates videos ~2.7 times faster.")
-                        gif = gr.Checkbox(label="Enable GIF", value=True, info="Additionally creates GIF.")
+                        # gif = gr.Checkbox(label="Enable GIF", value=True, info="Additionally creates GIF.")
                         enable_longer_videos = gr.Checkbox(label="Enable longer videos", value=False, info="Enable this if you want to generate videos longer than 24 frames. Inference will be ~2 times slower even for same length videos.")
 
                     with gr.Row(visible=False) as longer_video_row:
@@ -552,7 +551,12 @@ def generate_tab_ui():
             
                     generate_button = gr.Button(value="Generate", variant='primary')
                     
-                result_video = gr.Video(label="Generated Animation", interactive=False)
+
+                with gr.Tab(label="GIF"):
+                    result_gif = gr.Image(label="Generated GIF", interactive=False)
+
+                with gr.Tab(label="MP4"):
+                    result_video = gr.Video(label="Generated Video", interactive=False)
 
             def update_init_image_dropdown(init_image_dropdown, sampler_dropdown):
                 sampler_choices = list(scheduler_dict.keys())
@@ -586,10 +590,10 @@ def generate_tab_ui():
                     context_stride,
                     context_overlap,
                     fp16,
-                    gif
+                    # gif
                 ] + lora_dropdown_list
                 + lora_alpha_slider_list,
-                outputs=[result_video]
+                outputs=[result_video, result_gif]
             )
 
 def download_tab_ui():

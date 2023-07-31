@@ -13,7 +13,7 @@ import PIL.ImageOps
 from packaging import version
 from PIL import Image
 
-def save_videos_grid(videos: torch.Tensor, path: str, rescale=False, n_rows=6, fps=8, save_frames=False):
+def save_videos_grid(videos: torch.Tensor, path: str, rescale=False, n_rows=6, fps=8, save_frames=False, save_additional_gif=False):
     videos = rearrange(videos, "b c t h w -> t b c h w")
     outputs = []
 
@@ -35,6 +35,9 @@ def save_videos_grid(videos: torch.Tensor, path: str, rescale=False, n_rows=6, f
         outputs.append(x)
 
     imageio.mimsave(path, outputs, fps=fps)
+    if save_additional_gif:
+        path.replace(".mp4", ".gif")
+        imageio.mimsave(path, outputs, fps=fps)
 
 
 # DDIM Inversion
