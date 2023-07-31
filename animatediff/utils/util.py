@@ -20,7 +20,7 @@ def save_videos_grid(videos: torch.Tensor, path: str, rescale=False, n_rows=6, f
     os.makedirs(os.path.dirname(path), exist_ok=True)
     if save_frames:
         frames_path = os.path.join(os.path.dirname(path), 'frames')
-        os.makedirs(os.path.dirname(frames_path), exist_ok=True)
+        os.makedirs(frames_path, exist_ok=True)
     for i, x in enumerate(videos):
         x = torchvision.utils.make_grid(x, nrow=n_rows)
         x = x.transpose(0, 1).transpose(1, 2).squeeze(-1)
