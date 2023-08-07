@@ -15,14 +15,6 @@ This a fork of the official repo. Made specifically to run in Colab with gradio 
 - `28/07/2023` 100% inference speed due to fp16 (Credit to https://github.com/dajes/AnimateDiff/tree/longer_videos)
 - `28/07/2023` Loading of multiple LoRAs (Without degrading the network with each generation)
 
-## Todo
-- Allow uploading of init images
-- Init image strength and decay options. Allowing you to control how strong the generation should follow to the initial image and how quickly it diverges from it.
-- Implement rife-ncnn-vulkan (Idea from https://github.com/neggles/animatediff-cli)
-- Explore implentation of control net with mov2mov
-- Load/Save from configs
-- Configs tab
-
 ## Testing and replication
 
 <table width="100%">
