@@ -495,7 +495,6 @@ def generate_tab_ui():
                     label="Select init image",
                     info="Does not work with Euler sampling. Will default to DDIM if Euler was selected. PNDMScheduler is slower but could be better than DDIM. I'm not sure. Let me know if you find out.",
                     choices=["none"] + controller.init_image_list,
-                    value="none",
                     interactive=True,
                 )
 
