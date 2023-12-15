@@ -33,6 +33,14 @@ from einops import rearrange
 from ..models.unet import UNet3DConditionModel
 from ..utils.util import preprocess_image
 
+from ..utils.freeinit_utils import (
+    get_freq_filter,
+    freq_mix_3d,
+)
+import os
+
+from ..utils.util import save_videos_grid
+
 from ..utils import overlap_policy
 from ..utils.path import get_absolute_path
 
@@ -521,6 +529,198 @@ class AnimationPipeline(DiffusionPipeline):
                     if callback is not None and i % callback_steps == 0:
                         callback(i, t, latents)
 
+
+        # Post-processing
+        video = self.decode_latents(latents)
+
+        # Convert to tensor
+        if output_type == "tensor":
+            video = torch.from_numpy(video)
+
+        if not return_dict:
+            return video
+
+        return AnimationPipelineOutput(videos=video)
+    
+class AnimationFreeInitPipeline(AnimationPipeline):
+    _optional_components = []
+
+    def __init__(
+        self,
+        vae: AutoencoderKL,
+        text_encoder: CLIPTextModel,
+        tokenizer: CLIPTokenizer,
+        unet: UNet3DConditionModel,
+        scheduler: Union[
+            DDIMScheduler,
+            PNDMScheduler,
+            LMSDiscreteScheduler,
+            EulerDiscreteScheduler,
+            EulerAncestralDiscreteScheduler,
+            DPMSolverMultistepScheduler,
+        ],
+    ):
+        super().__init__(vae, text_encoder, tokenizer, unet, scheduler)
+        self.freq_filter = None
+
+    
+    @torch.no_grad()
+    def init_filter(self, video_length, height, width, filter_params):
+        # initialize frequency filter for noise reinitialization
+        batch_size = 1
+        num_channels_latents = self.unet.in_channels
+        filter_shape = [
+            batch_size, 
+            num_channels_latents, 
+            video_length, 
+            height // self.vae_scale_factor, 
+            width // self.vae_scale_factor
+        ]
+        self.freq_filter = get_freq_filter(filter_shape, device=self._execution_device, params=filter_params)
+
+    @torch.no_grad()
+    def __call__(
+        self,
+        prompt: Union[str, List[str]],
+        video_length: Optional[int],
+        height: Optional[int] = None,
+        width: Optional[int] = None,
+        num_inference_steps: int = 50,
+        guidance_scale: float = 7.5,
+        negative_prompt: Optional[Union[str, List[str]]] = None,
+        num_videos_per_prompt: Optional[int] = 1,
+        eta: float = 0.0,
+        generator: Optional[Union[torch.Generator, List[torch.Generator]]] = None,
+        latents: Optional[torch.FloatTensor] = None,
+        output_type: Optional[str] = "tensor",
+        return_dict: bool = True,
+        callback: Optional[Callable[[int, int, torch.FloatTensor], None]] = None,
+        callback_steps: Optional[int] = 1,
+        # freeinit args
+        num_iters: int = 5,
+        use_fast_sampling: bool = False,
+        save_intermediate: bool = False,
+        save_dir: str = None,
+        save_name: str = None,
+        use_fp16: bool = False,
+        **kwargs
+    ):
+        if use_fp16:
+            print('Warning: using half percision for inferencing!')
+            self.vae.to(dtype=torch.float16)
+            self.unet.to(dtype=torch.float16)
+            self.text_encoder.to(dtype=torch.float16)
+        # Default height and width to unet
+        height = height or self.unet.config.sample_size * self.vae_scale_factor
+        width = width or self.unet.config.sample_size * self.vae_scale_factor
+
+        # Check inputs. Raise error if not correct
+        self.check_inputs(prompt, height, width, callback_steps)
+
+        # Define call parameters
+        # batch_size = 1 if isinstance(prompt, str) else len(prompt)
+        batch_size = 1
+        if latents is not None:
+            batch_size = latents.shape[0]
+        if isinstance(prompt, list):
+            batch_size = len(prompt)
+
+        device = self._execution_device
+        # here `guidance_scale` is defined analog to the guidance weight `w` of equation (2)
+        # of the Imagen paper: https://arxiv.org/pdf/2205.11487.pdf . `guidance_scale = 1`
+        # corresponds to doing no classifier free guidance.
+        do_classifier_free_guidance = guidance_scale > 1.0
+
+        # Encode input prompt
+        prompt = prompt if isinstance(prompt, list) else [prompt] * batch_size
+        if negative_prompt is not None:
+            negative_prompt = negative_prompt if isinstance(negative_prompt, list) else [negative_prompt] * batch_size 
+        text_embeddings = self._encode_prompt(
+            prompt, device, num_videos_per_prompt, do_classifier_free_guidance, negative_prompt
+        )
+
+        # Prepare timesteps
+        self.scheduler.set_timesteps(num_inference_steps, device=device)
+        timesteps = self.scheduler.timesteps
+
+        # Prepare latent variables
+        num_channels_latents = self.unet.in_channels
+        latents = self.prepare_latents(
+            batch_size * num_videos_per_prompt,
+            num_channels_latents,
+            video_length,
+            height,
+            width,
+            text_embeddings.dtype,
+            device,
+            generator,
+            latents,
+        )
+        latents_dtype = latents.dtype
+
+        # Prepare extra step kwargs.
+        extra_step_kwargs = self.prepare_extra_step_kwargs(generator, eta)
+
+        # Sampling with FreeInit.
+        for iter in range(num_iters):
+            #  FreeInit ------------------------------------------------------------------
+            if iter == 0:
+                initial_noise = latents.detach().clone()
+            else:
+                # 1. DDPM Forward with initial noise, get noisy latents z_T
+                diffuse_timestep = self.scheduler.config.num_train_timesteps - 1 # diffuse to t=999 noise level
+                diffuse_timesteps = torch.full((batch_size,),int(diffuse_timestep))
+                diffuse_timesteps = diffuse_timesteps.long()
+                z_T = self.scheduler.add_noise(
+                    original_samples=latents.to(device), 
+                    noise=initial_noise.to(device), 
+                    timesteps=diffuse_timesteps.to(device)
+                )
+                # 2. create random noise z_rand for high-frequency
+                z_rand = torch.randn((batch_size * num_videos_per_prompt, num_channels_latents, video_length, height // self.vae_scale_factor, width // self.vae_scale_factor), device=device)
+                # 3. Roise Reinitialization
+                latents = freq_mix_3d(z_T.to(dtype=torch.float32), z_rand, LPF=self.freq_filter)
+                latents = latents.to(latents_dtype)
+            
+            # Coarse-to-Fine Sampling for Fast Inference (can lead to sub-optimal results)
+            if use_fast_sampling:
+                current_num_inference_steps= int(num_inference_steps / num_iters * (iter + 1))
+                self.scheduler.set_timesteps(current_num_inference_steps, device=device)
+                timesteps = self.scheduler.timesteps
+            #  --------------------------------------------------------------------------
+
+            # Denoising loop
+            num_warmup_steps = len(timesteps) - num_inference_steps * self.scheduler.order
+            with self.progress_bar(total=num_inference_steps) as progress_bar:
+                for i, t in enumerate(timesteps):
+                    # expand the latents if we are doing classifier free guidance
+                    latent_model_input = torch.cat([latents] * 2) if do_classifier_free_guidance else latents
+                    latent_model_input = self.scheduler.scale_model_input(latent_model_input, t)
+
+                    # predict the noise residual
+                    noise_pred = self.unet(latent_model_input, t, encoder_hidden_states=text_embeddings).sample.to(dtype=latents_dtype)
+
+                    # perform guidance
+                    if do_classifier_free_guidance:
+                        noise_pred_uncond, noise_pred_text = noise_pred.chunk(2)
+                        noise_pred = noise_pred_uncond + guidance_scale * (noise_pred_text - noise_pred_uncond)
+
+                    # compute the previous noisy sample x_t -> x_t-1
+                    latents = self.scheduler.step(noise_pred, t, latents, **extra_step_kwargs).prev_sample
+
+                    # call the callback, if provided
+                    if i == len(timesteps) - 1 or ((i + 1) > num_warmup_steps and (i + 1) % self.scheduler.order == 0):
+                        progress_bar.update()
+                        if callback is not None and i % callback_steps == 0:
+                            callback(i, t, latents)
+            
+            # save intermediate results
+            if save_intermediate:
+                # Post-processing
+                video = self.decode_latents(latents)
+                video = torch.from_numpy(video)
+                os.makedirs(save_dir, exist_ok=True)
+                save_videos_grid(video, f"{save_dir}/{save_name}_iter{iter}.gif")
 
         # Post-processing
         video = self.decode_latents(latents)

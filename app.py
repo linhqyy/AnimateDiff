@@ -16,7 +16,7 @@ from diffusers.utils.import_utils import is_xformers_available
 from transformers import CLIPTextModel, CLIPTokenizer
 
 from animatediff.models.unet import UNet3DConditionModel
-from animatediff.pipelines.pipeline_animation import AnimationPipeline
+from animatediff.pipelines.pipeline_animation import AnimationPipeline, AnimationFreeInitPipeline
 from animatediff.utils.util import save_videos_grid
 from animatediff.utils.convert_from_ckpt import convert_ldm_unet_checkpoint, convert_ldm_clip_checkpoint, convert_ldm_vae_checkpoint
 from animatediff.utils.convert_lora_safetensor_to_diffusers import convert_lora
@@ -280,7 +280,7 @@ class AnimateController:
 
         if is_xformers_available(): self.unet.enable_xformers_memory_efficient_attention()
 
-        pipeline = AnimationPipeline(
+        pipeline = AnimationFreeInitPipeline(
             vae=self.vae, text_encoder=self.text_encoder, tokenizer=self.tokenizer, unet=self.unet,
             scheduler=scheduler_dict[sampler_dropdown](**OmegaConf.to_container(self.inference_config.noise_scheduler_kwargs))
         ).to("cuda")
