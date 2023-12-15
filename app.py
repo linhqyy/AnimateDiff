@@ -280,6 +280,13 @@ class AnimateController:
 
         if is_xformers_available(): self.unet.enable_xformers_memory_efficient_attention()
 
+        if init_image is not None:
+            init_image_path = "./"
+            with open(init_image, "wb") as f:
+                f.write(init_image.read())
+            init_image = init_image_path
+        else:
+            init_image = None
         pipeline = AnimationPipeline(
             vae=self.vae, text_encoder=self.text_encoder, tokenizer=self.tokenizer, unet=self.unet,
             scheduler=scheduler_dict[sampler_dropdown](**OmegaConf.to_container(self.inference_config.noise_scheduler_kwargs))
@@ -484,7 +491,7 @@ def generate_tab_ui():
 
             with gr.Tab(label="Prompts"):
                 with gr.Row():
-                    init_image_dropdown = gr.Dropdown(
+                    init_image_dropdown = gr.File(
                     label="Select init image",
                     info="Does not work with Euler sampling. Will default to DDIM if Euler was selected. PNDMScheduler is slower but could be better than DDIM. I'm not sure. Let me know if you find out.",
                     choices=["none"] + controller.init_image_list,
