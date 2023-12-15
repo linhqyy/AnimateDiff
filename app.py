@@ -281,7 +281,7 @@ class AnimateController:
         if is_xformers_available(): self.unet.enable_xformers_memory_efficient_attention()
 
         if init_image is not None:
-            init_image_path = "./"
+            init_image_path = "f./{os.path.basename(init_image)}"
             with open(init_image, "wb") as f:
                 f.write(init_image.read())
             init_image = init_image_path
